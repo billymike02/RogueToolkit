@@ -3,6 +3,8 @@ from ProjectOrion.operators import *
 from ProjectOrion.panels import *
 from ProjectOrion.properties import *
 
+# to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application
+
 # basic information
 bl_info = {
     "name": "Project Orion",
