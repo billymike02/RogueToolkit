@@ -1,4 +1,4 @@
-# ProjectOrion
+# Rogue-Toolkit
 experimental sci-fi addon for Blender
 
 # Features:
