@@ -23,12 +23,7 @@ class MyProperties(bpy.types.PropertyGroup):
         type=bpy.types.Object,
         poll=path_selector
     )
-    
-    starfield: bpy.props.PointerProperty(
-        name = "Starfield",
-        description = "Reference to generated starfield shader.",
-        type = bpy.types.World
-    )
+
     
     lightspeed_time: bpy.props.IntProperty(
         name = "Transition Length",
@@ -41,5 +36,13 @@ class MyProperties(bpy.types.PropertyGroup):
         description="Choose the forward axis",
         items=forward_axis_options,
         default="FORWARD_X"
+    )
+
+class SceneProperties(bpy.types.PropertyGroup):
+    
+    starfield: bpy.props.PointerProperty(
+    name = "Starfield",
+    description = "Reference to generated starfield shader.",
+    type = bpy.types.World
     )
 

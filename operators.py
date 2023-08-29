@@ -196,6 +196,8 @@ class WorldOperator(bpy.types.Operator):
         # Assign the world shader to the active scene
         scene = bpy.context.scene
         scene.world = world
+
+        context.scene.scene_tool.starfield = world
         
         self.report({'INFO'}, "World updated to designated starfield.")
         return {'FINISHED'}

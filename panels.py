@@ -40,4 +40,20 @@ class SimplePanel(bpy.types.Panel):
         
         # World
         layout.row().operator("scene.create_starfield", icon = "SORTBYEXT")
+
+class WorldPanel(bpy.types.Panel):
+    bl_idname = "PROPERTIES_PT_world_panel"
+    bl_label = "Rogue Toolkit"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+
+    def draw(self, context):
+
+        layout = self.layout
+        # World
+        row = layout.row()
+        row.operator("scene.create_starfield", icon = "SORTBYEXT")
+
+        if context.scene.scene_tool.starfield:
+            row.enabled = False
             

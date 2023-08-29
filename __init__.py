@@ -21,21 +21,25 @@ classes = [
     CreateFlightPlan, 
     CreateLightspeedJump, 
     CreateLightspeedReturn, 
-    SimplePanel, 
+    SimplePanel,
+    WorldPanel, 
     WorldOperator, 
-    MyProperties]
+    MyProperties,
+    SceneProperties]
 
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
     bpy.types.Object.my_tool = bpy.props.PointerProperty(type=MyProperties) # save custom properties
+    bpy.types.Scene.scene_tool = bpy.props.PointerProperty(type=SceneProperties)
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
     
     del bpy.types.Object.my_tool # delete custom properties
+    del bpy.types.Scene.scene_tool
 
 if __name__ == "__main__":
     register()
