@@ -3,7 +3,7 @@ from RogueToolkit.operators import *
 from RogueToolkit.panels import *
 from RogueToolkit.properties import *
 
-# to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application
+# to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application (in %appdata%)
 
 # basic information
 bl_info = {
