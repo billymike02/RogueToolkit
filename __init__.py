@@ -1,18 +1,18 @@
 import bpy
-from ProjectOrion.operators import *
-from ProjectOrion.panels import *
-from ProjectOrion.properties import *
+from RogueToolkit.operators import *
+from RogueToolkit.panels import *
+from RogueToolkit.properties import *
 
 # to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application
 
 # basic information
 bl_info = {
-    "name": "Project Orion",
+    "name": "Rogue Toolkit",
     "author": "Billy Woodward",
-    "version": (0, 0, 1),
-    "blender": (3, 3, 1),
+    "version": (0, 0, 2),
+    "blender": (3, 6, 1),
     "location": "View3D > Tools",
-    "description": "A simple addon",
+    "description": "An addon designed to assist artists in the creation of multifaceted sci-fi scenes within Blender.",
 }
 
 # keep track of all classes to register
