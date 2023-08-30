@@ -274,8 +274,8 @@ class CreateLaser(bpy.types.Operator):
 
         ## Keyframing ##
 
-        cur_frame = bpy.context.scene.frame_current
-        lifetime = 25
+        cur_frame = context.scene.frame_current
+        lifetime = 50
         velocity = 10
 
         new_laser.matrix_world = emitter.matrix_world
@@ -315,31 +315,35 @@ class CreateLaser(bpy.types.Operator):
             for kf in fcurve.keyframe_points:
                 kf.interpolation = 'LINEAR'
 
-        ## Raycasting ##
+        ## -- Raycasting -- ##
 
-        # Assume "obj" is the object you want to use as the emitter
-        laser_matrix = new_laser.matrix_world
-        laser_normal_z = laser_matrix @ Vector((0, 0, 1))
+        emitter_direction = Vector(emitter.matrix_world.col[2][:3])
+        collision_frame = None
+                        
+        result = bpy.context.scene.ray_cast(
+            bpy.context.window.view_layer.depsgraph,
+            emitter.matrix_world.translation,
+            emitter_direction)
 
-        # Make sure the normal vector is normalized
-        laser_direction = laser_normal_z.normalized()
-
-        # Assume "scene" is the active scene
-        depsgraph = context.window.view_layer.depsgraph
-        origin = (0, 0, 0)
-        direction = (0, 0, -1)
-        result = context.scene.ray_cast(depsgraph, origin, laser_direction)
-
-        print("Origin:", origin)
-        print("Laser Direction:", laser_direction)
-
+        # In the event of a collision
         if result[0]:
             intersection_point = result[1]
             normal = result[2]
-            print("Ray hit at:", intersection_point)
+            print("Laser hit at:", intersection_point)
+            distance = (emitter.matrix_world.translation - result[1]).length
+            print("Distance:", distance)
             print("Normal at hit point:", normal)
+
+            collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
+            print("Frame of Impact:", collision_frame)
+
+            # 'Destroy' the laser
+            new_laser.hide_viewport = True
+            new_laser.hide_render = True
+            new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
+            new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
         else:
-            print("Ray didn't hit any objects.")
+            print("Laser didn't hit any objects.")
 
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}

@@ -41,6 +41,7 @@ def register():
     
     bpy.types.Object.my_tool = bpy.props.PointerProperty(type=MyProperties) # save custom properties
     bpy.types.Scene.scene_tool = bpy.props.PointerProperty(type=SceneProperties)
+    bpy.types.Object.laser_tool = bpy.props.PointerProperty(type=LaserEmitterProperties)
 
     # Add the hotkey
     wm = bpy.context.window_manager
@@ -57,6 +58,7 @@ def unregister():
     
     del bpy.types.Object.my_tool # delete custom properties
     del bpy.types.Scene.scene_tool
+    del bpy.types.Object.laser_tool
 
     # Remove the hotkey
     for km, kmi in addon_keymaps:
