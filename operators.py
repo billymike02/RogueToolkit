@@ -275,17 +275,40 @@ class CreateLaser(bpy.types.Operator):
         ## Keyframing ##
 
         cur_frame = bpy.context.scene.frame_current
-        lifetime = 50
-        hitframe = cur_frame + lifetime
+        lifetime = 25
+        velocity = 10
 
-        new_laser.rotation_euler = emitter.rotation_euler
+        new_laser.matrix_world = emitter.matrix_world
+        
+        emitter_matrix = emitter.matrix_world.copy()
+        emitter_matrix.invert() # inversion basically cancels out transformations applied to the object
+        location, rotation, scale = emitter_matrix.decompose()
+        laser_matrix = Matrix.LocRotScale(location, rotation, scale)
+        rotation_vector = Vector((0,0,0)) @ laser_matrix
+        new_laser.location = new_laser.location + rotation_vector
 
-      # Generate a random direction
-        dir = new_laser.rotation_euler
-        rot_vec = dir.to_vector().normalize()
-        print(rot_vec)
-                
-                
+        new_laser.keyframe_insert( data_path = 'location', frame = cur_frame)
+        new_laser.location = emitter.matrix_world.translation + Vector((0, 0, lifetime * velocity)) @ laser_matrix
+        new_laser.keyframe_insert( data_path = 'location', frame = cur_frame + lifetime)
+
+        # Set initial visibility
+        new_laser.hide_viewport = True
+        new_laser.hide_render = True
+        new_laser.keyframe_insert(data_path="hide_viewport", frame=cur_frame - 1)
+        new_laser.keyframe_insert(data_path="hide_render", frame=cur_frame - 1)
+
+        # Make the empty visible before it starts moving
+        new_laser.hide_viewport = False
+        new_laser.hide_render = False
+        new_laser.keyframe_insert(data_path="hide_viewport", frame=cur_frame)
+        new_laser.keyframe_insert(data_path="hide_render", frame=cur_frame)
+
+        # Set visibility to hide again after animation ends
+        new_laser.hide_viewport = True
+        new_laser.hide_render = True
+        new_laser.keyframe_insert(data_path="hide_viewport", frame=cur_frame + lifetime)
+        new_laser.keyframe_insert(data_path="hide_render", frame=cur_frame + lifetime)
+
         #making animation linear
         fcurves = new_laser.animation_data.action.fcurves
         for fcurve in fcurves:
@@ -306,6 +329,9 @@ class CreateLaser(bpy.types.Operator):
         origin = (0, 0, 0)
         direction = (0, 0, -1)
         result = context.scene.ray_cast(depsgraph, origin, laser_direction)
+
+        print("Origin:", origin)
+        print("Laser Direction:", laser_direction)
 
         if result[0]:
             intersection_point = result[1]
