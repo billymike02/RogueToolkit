@@ -1,6 +1,8 @@
 # Rogue Toolkit
 An addon designed to assist artists in the creation of multifaceted sci-fi scenes within Blender.
 
+![Blender Logo](https://download.blender.org/branding/blender_logo_socket.png)
+
 ### Key Features:
 - Easy generation and customization of starfields
 - Streamlined rigging of objects to paths
