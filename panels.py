@@ -4,10 +4,10 @@ import bpy
 # Panel to be found in View 3D (hit 'n' in the viewport)
 class SimplePanel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_simple_panel"
-    bl_label = "General"
+    bl_label = "Rigging"
     bl_space_type = "VIEW_3D" # to be found in the side-menu in 3D view
     bl_region_type = "UI"
-    bl_category = "Project Orion"
+    bl_category = "Rogue Toolkit"
 
     def draw(self, context):
         
@@ -40,6 +40,22 @@ class SimplePanel(bpy.types.Panel):
         
         # World
         layout.row().operator("scene.create_starfield", icon = "SORTBYEXT")
+
+class LaserCreator(bpy.types.Panel):
+    bl_idname = "VIEW3D_PT_laser_creator"
+    bl_label = "Lasers"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Rogue Toolkit"
+
+    def draw(self, context):
+        scene_tool = context.scene.scene_tool
+        layout = self.layout
+
+        row = layout.row()
+        row.operator("scene.create_laser_emitter")
+        row = layout.row()
+        row.operator("scene.delete_all_lasers")
 
 class WorldPanel(bpy.types.Panel):
     bl_idname = "PROPERTIES_PT_world_panel"

@@ -22,10 +22,17 @@ classes = [
     CreateLightspeedJump, 
     CreateLightspeedReturn, 
     SimplePanel,
+    LaserCreator,
     WorldPanel, 
-    WorldOperator, 
+    WorldOperator,
+    CreateLaserEmitter, 
+    CreateLaser,
+    DeleteAllLasers,
     MyProperties,
     SceneProperties]
+
+
+addon_keymaps = []
 
 def register():
     for cls in classes:
@@ -34,12 +41,26 @@ def register():
     bpy.types.Object.my_tool = bpy.props.PointerProperty(type=MyProperties) # save custom properties
     bpy.types.Scene.scene_tool = bpy.props.PointerProperty(type=SceneProperties)
 
+    # Add the hotkey
+    wm = bpy.context.window_manager
+    kc = wm.keyconfigs.addon
+    if kc:
+        km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
+        kmi = km.keymap_items.new(CreateLaser.bl_idname, type='P', value='PRESS', ctrl=False)
+        addon_keymaps.append((km, kmi))
+
+
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
     
     del bpy.types.Object.my_tool # delete custom properties
     del bpy.types.Scene.scene_tool
+
+    # Remove the hotkey
+    for km, kmi in addon_keymaps:
+        km.keymap_items.remove(kmi)
+    addon_keymaps.clear()
 
 if __name__ == "__main__":
     register()

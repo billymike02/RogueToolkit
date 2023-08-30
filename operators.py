@@ -227,6 +227,81 @@ class WorldOperator(bpy.types.Operator):
         self.report({'INFO'}, "World updated to designated starfield.")
         return {'FINISHED'}
 
-# TODO ensure that this is correct location
-def path_selector(self, obj):
-    return obj.type == 'CURVE'
+target_collection_name = 'RogueToolkit_Lasers'
+
+class CreateLaser(bpy.types.Operator):
+    bl_idname = "scene.create_laser"
+    bl_label = "Create Laser"
+    bl_description = "Lasers!!!"
+
+    def execute(self, context):
+        location = (0, 0, 0)
+
+        selected_objects = bpy.context.selected_objects
+        active_object = bpy.context.active_object
+
+        if active_object and active_object in selected_objects:
+            # Get the location of the active object
+            location = active_object.location
+
+
+        target_collection = None
+
+        active_collection = context.collection
+
+        if target_collection_name in bpy.data.collections:
+                target_collection = bpy.data.collections[target_collection_name]
+        else:
+            # Create the collection if it doesn't exist
+            target_collection = bpy.data.collections.new(target_collection_name)
+            bpy.context.scene.collection.children.link(target_collection)
+
+        bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
+        new_emitter = bpy.context.active_object
+
+        target_collection.objects.link(new_emitter)
+        active_collection.objects.unlink(new_emitter)
+
+        self.report({'INFO'}, "Lasers created.")
+        return {'FINISHED'}
+
+class CreateLaserEmitter(bpy.types.Operator):
+    bl_idname = "scene.create_laser_emitter"
+    bl_label = "Create Laser Emitter"
+    bl_description = "Create emitter object for lasers."
+
+    def execute(self, context):
+        location = (0, 0, 0)
+
+        selected_objects = bpy.context.selected_objects
+        active_object = bpy.context.active_object
+
+        if active_object and active_object in selected_objects:
+            # Get the location of the active object
+            location = active_object.location
+
+        bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
+        new_emitter = bpy.context.active_object
+
+        self.report({'INFO'}, "Laser emitter created.")
+        return {'FINISHED'}
+
+class DeleteAllLasers(bpy.types.Operator):
+    bl_idname = "scene.delete_all_lasers"
+    bl_label = "Delete All Lasers"
+    bl_description = "Delete all lasers in this scene."
+
+    def execute(self, context):
+
+        if target_collection_name in bpy.data.collections:
+            target_collection = bpy.data.collections[target_collection_name]
+
+            objects_to_delete = target_collection.objects[:]
+            for obj in objects_to_delete:
+                bpy.data.objects.remove(obj)
+
+            bpy.data.collections.remove(target_collection)
+
+        self.report({'INFO'}, "All lasers deleted.")
+        return {'FINISHED'}
+    

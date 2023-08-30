@@ -78,6 +78,7 @@ class MyProperties(bpy.types.PropertyGroup):
     )
 
 class SceneProperties(bpy.types.PropertyGroup):
+
     
     starfield: bpy.props.PointerProperty(
         name = "Starfield",
