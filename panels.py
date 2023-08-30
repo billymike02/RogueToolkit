@@ -31,15 +31,12 @@ class SimplePanel(bpy.types.Panel):
         layout.row().prop(my_tool, "forward_axis", expand=True)
         
         # Lightspeed
-        layout.label(text="Animation")
+        layout.label(text="Quick Effects")
         box = layout.box()
         box.label(text="Lightspeed")
         box.row().prop(my_tool, "lightspeed_time")
         box.row().operator("object.create_lightspeed_jump", icon="EXPORT")
         box.row().operator("object.create_lightspeed_return", icon="IMPORT")
-        
-        # World
-        layout.row().operator("scene.create_starfield", icon = "SORTBYEXT")
 
 class LaserCreator(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_laser_creator"
@@ -54,8 +51,22 @@ class LaserCreator(bpy.types.Panel):
 
         row = layout.row()
         row.operator("scene.create_laser_emitter")
+
         row = layout.row()
-        row.operator("scene.delete_all_lasers")
+        row.prop(context.object.laser_tool, "toggle_collision")
+        row = layout.row()
+        row.prop(context.object.laser_tool, "laser_lifetime")
+        row = layout.row()
+        row.prop(context.object.laser_tool, "laser_velocity")
+
+        row = layout.separator()
+
+        row = layout.row()
+        row.operator("scene.create_laser")
+        row = layout.row()
+        row.alert = True
+        row.operator("scene.delete_all_lasers", icon = 'TRASH')
+
 
 class WorldPanel(bpy.types.Panel):
     bl_idname = "PROPERTIES_PT_world_panel"

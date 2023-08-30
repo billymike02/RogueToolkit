@@ -59,7 +59,7 @@ class CreateLightspeedJump(bpy.types.Operator):
         rotation = obj.rotation_euler.to_matrix()
 
         # Calculate the vector representing the object's normal-x direction
-        normal_x = rotation @ mathutils.Vector((0, 0, 1))
+        normal_x = rotation @ Vector((0, 0, 1))
 
         # Define the amount of translation along the normal-x direction
         translation_amount = 999.9
@@ -107,7 +107,7 @@ class CreateLightspeedReturn(bpy.types.Operator):
         location = obj.location
         rotation = obj.rotation_euler.to_matrix()
         # Calculate the vector representing the object's normal-x direction
-        normal_x = rotation @ mathutils.Vector((0, 0, 1))
+        normal_x = rotation @ Vector((0, 0, 1))
         # Define the amount of translation along the normal-x direction
         translation_amount = -999.9
         # Apply the translation along the normal-x direction
@@ -275,8 +275,8 @@ class CreateLaser(bpy.types.Operator):
         ## Keyframing ##
 
         cur_frame = context.scene.frame_current
-        lifetime = 50
-        velocity = 10
+        lifetime = context.object.laser_tool.laser_lifetime
+        velocity = context.object.laser_tool.laser_velocity
 
         new_laser.matrix_world = emitter.matrix_world
         
@@ -317,33 +317,35 @@ class CreateLaser(bpy.types.Operator):
 
         ## -- Raycasting -- ##
 
-        emitter_direction = Vector(emitter.matrix_world.col[2][:3])
-        collision_frame = None
-                        
-        result = bpy.context.scene.ray_cast(
-            bpy.context.window.view_layer.depsgraph,
-            emitter.matrix_world.translation,
-            emitter_direction)
+        if context.object.laser_tool.toggle_collision is True:
 
-        # In the event of a collision
-        if result[0]:
-            intersection_point = result[1]
-            normal = result[2]
-            print("Laser hit at:", intersection_point)
-            distance = (emitter.matrix_world.translation - result[1]).length
-            print("Distance:", distance)
-            print("Normal at hit point:", normal)
+            emitter_direction = Vector(emitter.matrix_world.col[2][:3])
+            collision_frame = None
+                            
+            result = bpy.context.scene.ray_cast(
+                bpy.context.window.view_layer.depsgraph,
+                emitter.matrix_world.translation,
+                emitter_direction)
 
-            collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
-            print("Frame of Impact:", collision_frame)
+            # In the event of a collision
+            if result[0]:
+                intersection_point = result[1]
+                normal = result[2]
+                print("Laser hit at:", intersection_point)
+                distance = (emitter.matrix_world.translation - result[1]).length
+                print("Distance:", distance)
+                print("Normal at hit point:", normal)
 
-            # 'Destroy' the laser
-            new_laser.hide_viewport = True
-            new_laser.hide_render = True
-            new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
-            new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
-        else:
-            print("Laser didn't hit any objects.")
+                collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
+                print("Frame of Impact:", collision_frame)
+
+                # 'Destroy' the laser
+                new_laser.hide_viewport = True
+                new_laser.hide_render = True
+                new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
+                new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
+            else:
+                print("Laser didn't hit any objects.")
 
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}

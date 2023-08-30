@@ -88,8 +88,15 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     laser_velocity: bpy.props.FloatProperty(
         name = "Laser Velocity",
         description = "Velocity of lasers created by emitter.",
-        default = 100.0,
+        default = 1.0,
         min = 1.0
+    )
+
+    laser_lifetime: bpy.props.IntProperty(
+        name = "Laser Lifetime",
+        description = "How long the laser will 'exist' within the scene.",
+        default = 50,
+        min = 1
     )
 
     laser_scale: bpy.props.FloatProperty(
