@@ -99,6 +99,12 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         min = 0.1
     )
 
+    toggle_collision: bpy.props.BoolProperty(
+        name = "Toggle Collision",
+        description = "Sets whether or not laser should be destroyed when colliding with another object.",
+        default = True
+    )
+
     toggle_sparks: bpy.props.BoolProperty(
         name = "Toggle Sparks",
         description = "Set whether or not the laser should create sparks on impact.",

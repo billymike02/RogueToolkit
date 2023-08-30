@@ -1,4 +1,5 @@
 import bpy
+from mathutils import Vector, Matrix
 
 # 'Slave to Path' operator
 class SimpleOperator(bpy.types.Operator):
@@ -239,14 +240,19 @@ class CreateLaser(bpy.types.Operator):
 
         selected_objects = bpy.context.selected_objects
         active_object = bpy.context.active_object
+        emitter = None
 
         if active_object and active_object in selected_objects:
-            # Get the location of the active object
-            location = active_object.location
+            emitter = active_object
 
+            # Get the location of the active object
+            location = emitter.location
+
+        else:
+            return {'CANCELLED'}
+            
 
         target_collection = None
-
         active_collection = context.collection
 
         if target_collection_name in bpy.data.collections:
@@ -257,12 +263,59 @@ class CreateLaser(bpy.types.Operator):
             bpy.context.scene.collection.children.link(target_collection)
 
         bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
-        new_emitter = bpy.context.active_object
+        new_laser = bpy.context.active_object
 
-        target_collection.objects.link(new_emitter)
-        active_collection.objects.unlink(new_emitter)
+        bpy.context.view_layer.objects.active = emitter
+        emitter.select_set(True)
+        new_laser.select_set(False)
 
-        self.report({'INFO'}, "Lasers created.")
+        target_collection.objects.link(new_laser)
+        active_collection.objects.unlink(new_laser)
+
+        ## Keyframing ##
+
+        cur_frame = bpy.context.scene.frame_current
+        lifetime = 50
+        hitframe = cur_frame + lifetime
+
+        new_laser.rotation_euler = emitter.rotation_euler
+
+      # Generate a random direction
+        dir = new_laser.rotation_euler
+        rot_vec = dir.to_vector().normalize()
+        print(rot_vec)
+                
+                
+        #making animation linear
+        fcurves = new_laser.animation_data.action.fcurves
+        for fcurve in fcurves:
+            for kf in fcurve.keyframe_points:
+                kf.interpolation = 'LINEAR'
+
+        ## Raycasting ##
+
+        # Assume "obj" is the object you want to use as the emitter
+        laser_matrix = new_laser.matrix_world
+        laser_normal_z = laser_matrix @ Vector((0, 0, 1))
+
+        # Make sure the normal vector is normalized
+        laser_direction = laser_normal_z.normalized()
+
+        # Assume "scene" is the active scene
+        depsgraph = context.window.view_layer.depsgraph
+        origin = (0, 0, 0)
+        direction = (0, 0, -1)
+        result = context.scene.ray_cast(depsgraph, origin, laser_direction)
+
+        if result[0]:
+            intersection_point = result[1]
+            normal = result[2]
+            print("Ray hit at:", intersection_point)
+            print("Normal at hit point:", normal)
+        else:
+            print("Ray didn't hit any objects.")
+
+        self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}
 
 class CreateLaserEmitter(bpy.types.Operator):
