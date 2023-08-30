@@ -14,6 +14,45 @@ forward_axis_options = [
 def path_selector(self, obj):
     return obj.type == 'CURVE'
 
+class MyUpdateFunctions:
+
+    @staticmethod
+    def update_starfield_scale(self, context):
+         # Update the color value in the world shader node tree
+        world = bpy.context.scene.world
+        nodes = world.node_tree.nodes
+
+        # Find the ColorRamp node
+        noise_node = None
+        for node in nodes:
+            if isinstance(node, bpy.types.ShaderNodeTexNoise):
+                noise_node = node
+                break
+
+        noise_node.inputs['Scale'].default_value = context.scene.scene_tool.starfield_scale
+
+    @staticmethod
+    def update_star_color(self, context):
+        
+        # Update the color value in the world shader node tree
+        world = bpy.context.scene.world
+        nodes = world.node_tree.nodes
+
+        # Find the ColorRamp node
+        color_ramp_node = None
+        for node in nodes:
+            if isinstance(node, bpy.types.ShaderNodeValToRGB):
+                color_ramp_node = node
+                break
+
+        second_element = color_ramp_node.color_ramp.elements[1]
+
+        # Set the position of the first element to 0.7 (left marker)
+        second_element.color = context.scene.scene_tool.star_color
+
+        print("sellers")
+
+
 # define custom properties
 class MyProperties(bpy.types.PropertyGroup):
     
@@ -41,8 +80,28 @@ class MyProperties(bpy.types.PropertyGroup):
 class SceneProperties(bpy.types.PropertyGroup):
     
     starfield: bpy.props.PointerProperty(
-    name = "Starfield",
-    description = "Reference to generated starfield shader.",
-    type = bpy.types.World
+        name = "Starfield",
+        description = "Reference to generated starfield shader.",
+        type = bpy.types.World
     )
+    
+    starfield_scale: bpy.props.FloatProperty(
+        name = "Starfield Scale",
+        description = "How large the stars within the starfield shoul be.",
+        default = 1000,
+        min = 0,
+        update = MyUpdateFunctions.update_starfield_scale
+    )
+
+    star_color: bpy.props.FloatVectorProperty(
+        name="Star Color",
+        description = "Sets the color of the stars in the starfield. (Hint: to change the brightness of the stars change the 'Value' attribute)",
+        subtype='COLOR',
+        size=4,
+        min=0.0,
+        default=(1.0, 1.0, 1.0, 1.0),
+        update=MyUpdateFunctions.update_star_color
+    )
+
+
 

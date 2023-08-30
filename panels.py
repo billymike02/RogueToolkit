@@ -56,4 +56,9 @@ class WorldPanel(bpy.types.Panel):
 
         if context.scene.scene_tool.starfield:
             row.enabled = False
+
+        row = layout.row()
+        row.prop(context.scene.scene_tool, "starfield_scale")
+        row = layout.row()
+        row.prop(context.scene.scene_tool, "star_color")
             

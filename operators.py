@@ -183,15 +183,40 @@ class WorldOperator(bpy.types.Operator):
         for node in nodes:
             nodes.remove(node)
 
-        # Add a Background node
-        bg_node = nodes.new("ShaderNodeBackground")
-        bg_node.location = (0, 0)
+        texture_coord_node = nodes.new(type='ShaderNodeTexCoord')
+        mapping_node = nodes.new(type='ShaderNodeMapping')
+        noise_node = nodes.new(type='ShaderNodeTexNoise')
+        color_ramp_node = nodes.new(type='ShaderNodeValToRGB')
+        background_node = nodes.new(type='ShaderNodeBackground')
+        world_output_node = nodes.new(type='ShaderNodeOutputWorld')
 
-        # Add other nodes and connect them as desired
-        # Example: Adding a ColorRamp node
-        color_ramp_node = nodes.new("ShaderNodeValToRGB")
-        color_ramp_node.location = (200, 0)
-        links.new(color_ramp_node.outputs[0], bg_node.inputs[0])
+        # Set up the nodes
+        texture_coord_node.location = (-600, 0)
+        mapping_node.location = (-400, 0)
+        noise_node.location = (-200, 0)
+        color_ramp_node.location = (0, 0)
+        background_node.location = (200, 0)
+        world_output_node.location = (400, 0)
+
+        # Set the scale for the Noise node
+        noise_node.inputs['Scale'].default_value = 1000.0
+
+        # Link the nodes
+        world.node_tree.links.new(texture_coord_node.outputs['Generated'], mapping_node.inputs['Vector'])
+        world.node_tree.links.new(mapping_node.outputs['Vector'], noise_node.inputs['Vector'])
+        world.node_tree.links.new(noise_node.outputs['Fac'], color_ramp_node.inputs['Fac'])
+        world.node_tree.links.new(color_ramp_node.outputs['Color'], background_node.inputs['Color'])
+        world.node_tree.links.new(background_node.outputs['Background'], world_output_node.inputs['Surface'])
+
+        # Find the first element (marker) of the Color Ramp
+        first_element = color_ramp_node.color_ramp.elements[0]
+        second_element = color_ramp_node.color_ramp.elements[1]
+
+        star_brightness_multiplier = 3
+
+        # Set the position of the first element to 0.7 (left marker)
+        first_element.position = 0.7
+        second_element.color = (1 * star_brightness_multiplier, 1 * star_brightness_multiplier, 1 * star_brightness_multiplier, 1)
 
         # Assign the world shader to the active scene
         scene = bpy.context.scene
