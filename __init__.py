@@ -29,7 +29,8 @@ classes = [
     CreateLaser,
     DeleteAllLasers,
     MyProperties,
-    SceneProperties]
+    SceneProperties,
+    LaserEmitterProperties]
 
 
 addon_keymaps = []

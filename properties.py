@@ -77,9 +77,55 @@ class MyProperties(bpy.types.PropertyGroup):
         default="FORWARD_X"
     )
 
+class LaserEmitterProperties(bpy.types.PropertyGroup):
+
+    laser_obj: bpy.props.PointerProperty(
+        name = "Laser Object",
+        description = "Object to instantiate as laser.",
+        type=bpy.types.Object
+    )
+
+    laser_velocity: bpy.props.FloatProperty(
+        name = "Laser Velocity",
+        description = "Velocity of lasers created by emitter.",
+        default = 100.0,
+        min = 1.0
+    )
+
+    laser_scale: bpy.props.FloatProperty(
+        name = "Laser Scale",
+        description = "The scale of the lasers to be instantiated.",
+        default = 1.0,
+        min = 0.1
+    )
+
+    toggle_sparks: bpy.props.BoolProperty(
+        name = "Toggle Sparks",
+        description = "Set whether or not the laser should create sparks on impact.",
+        default = True
+    )
+
+    toggle_decals: bpy.props.BoolProperty(
+        name = "Toggle Decals",
+        description = "Set whether or not physical markers are made where the laser impacts objects.",
+        default = False
+    )
+
+    tracked_obj: bpy.props.PointerProperty(
+        name = "Tracked Object",
+        description = "Select the object for this emitter to track.",
+        type=bpy.types.Object
+    )
+
+    # visuals
+    toggle_targeter: bpy.props.BoolProperty(
+        name = "Toggle Targeter",        
+        description = "Set whetherl or not a visual assist will be drawn to help in aiming the emitter.",
+        default = False
+    )
+
 class SceneProperties(bpy.types.PropertyGroup):
 
-    
     starfield: bpy.props.PointerProperty(
         name = "Starfield",
         description = "Reference to generated starfield shader.",
