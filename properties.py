@@ -104,11 +104,10 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         min = 1
     )
 
-    laser_scale: bpy.props.FloatProperty(
+    laser_scale: bpy.props.FloatVectorProperty(
         name = "Laser Scale",
         description = "The scale of the lasers to be instantiated.",
-        default = 1.0,
-        min = 0.1
+        default = (1.0, 1.0, 1.0),
     )
 
     toggle_collision: bpy.props.BoolProperty(
@@ -126,7 +125,13 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     toggle_decals: bpy.props.BoolProperty(
         name = "Toggle Decals",
         description = "Set whether or not physical markers are made where the laser impacts objects.",
-        default = False
+        default = True
+    )
+
+    decal_scale: bpy.props.FloatVectorProperty(
+        name = "Decal Scale",
+        description = "Size that decals will be made.",
+        default = (0.1, 0.1, 0.1)
     )
 
     tracked_obj: bpy.props.PointerProperty(

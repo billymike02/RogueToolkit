@@ -228,7 +228,21 @@ class CreateStarfield(bpy.types.Operator):
         self.report({'INFO'}, "World updated to designated starfield.")
         return {'FINISHED'}
 
-target_collection_name = 'RogueToolkit_Lasers'
+laser_collection_name = 'RogueToolkit_Lasers'
+decal_collection_name = 'RogueToolkit_Decals'
+
+def move_to_collection(name: str, obj) -> None:
+    active_collection = bpy.context.collection
+    target_collection = None
+
+    if name in bpy.data.collections:
+        target_collection = bpy.data.collections[name]
+    else:
+        target_collection = bpy.data.collections.new(name)
+        bpy.context.scene.collection.children.link(target_collection)
+
+    target_collection.objects.link(obj)
+    active_collection.objects.unlink(obj)
 
 class CreateLaser(bpy.types.Operator):
     bl_idname = "object.create_laser"
@@ -251,26 +265,23 @@ class CreateLaser(bpy.types.Operator):
         else:
             return {'CANCELLED'}
             
+        print(emitter.laser_tool.laser_scale[0])
 
-        target_collection = None
-        active_collection = context.collection
+        bpy.ops.mesh.primitive_cylinder_add(
+            radius=0.01,
+            depth=1,
+            location=location,
+            scale=emitter.laser_tool.laser_scale
+        )
 
-        if target_collection_name in bpy.data.collections:
-                target_collection = bpy.data.collections[target_collection_name]
-        else:
-            # Create the collection if it doesn't exist
-            target_collection = bpy.data.collections.new(target_collection_name)
-            bpy.context.scene.collection.children.link(target_collection)
-
-        bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
         new_laser = bpy.context.active_object
+
 
         bpy.context.view_layer.objects.active = emitter
         emitter.select_set(True)
         new_laser.select_set(False)
 
-        target_collection.objects.link(new_laser)
-        active_collection.objects.unlink(new_laser)
+        move_to_collection(laser_collection_name, new_laser)
 
         ## Keyframing ##
 
@@ -325,33 +336,65 @@ class CreateLaser(bpy.types.Operator):
             result = bpy.context.scene.ray_cast(
                 bpy.context.window.view_layer.depsgraph,
                 emitter.matrix_world.translation,
-                emitter_direction)
+                emitter_direction
+                )
 
             # In the event of a collision
             if result[0]:
-                intersection_point = result[1]
-                normal = result[2]
-                print("Laser hit at:", intersection_point)
-                distance = (emitter.matrix_world.translation - result[1]).length
-                print("Distance:", distance)
-                print("Normal at hit point:", normal)
 
-                collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
-                print("Frame of Impact:", collision_frame)
+                print(result[4])
 
-                # 'Destroy' the laser
-                new_laser.hide_viewport = True
-                new_laser.hide_render = True
-                new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
-                new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
+                if result[4].name not in bpy.data.collections.get(laser_collection_name).objects:
+
+                    intersection_point = result[1]
+                    normal = result[2]
+                    print("Laser hit at:", intersection_point)
+                    distance = (emitter.matrix_world.translation - result[1]).length
+                    # print("Distance:", distance)
+                    # print("Normal at hit point:", normal)
+
+                    print("Object hit:", result[4].name)
+
+                    collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
+                    # print("Frame of Impact:", collision_frame)
+
+                    # 'Destroy' the laser
+                    new_laser.hide_viewport = True
+                    new_laser.hide_render = True
+                    new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
+                    new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
+
+                    ## -- Create laser impact marker -- ##
+                    if context.object.laser_tool.toggle_decals is True:
+                        bpy.ops.mesh.primitive_cube_add(enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
+                        marker = context.active_object
+                        bpy.context.view_layer.objects.active = emitter
+                        emitter.select_set(True)
+                        marker.select_set(False)
+
+                        move_to_collection(decal_collection_name, marker)
+
+                        # Animate visibility
+                        marker.hide_viewport = True
+                        marker.hide_render = True
+                        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame - 1)
+                        marker.keyframe_insert(data_path="hide_render", frame=collision_frame - 1)
+
+                        marker.hide_viewport = False
+                        marker.hide_render = False
+                        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
+                        marker.keyframe_insert(data_path="hide_render", frame=collision_frame)
             else:
                 print("Laser didn't hit any objects.")
+
 
         ## -- Save laser to emitter -- ##
         new_item = context.object.laser_tool.instantiated_lasers.add()
         new_item.instantiated_laser = new_laser
 
         print(new_item.instantiated_laser)
+
+
 
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}

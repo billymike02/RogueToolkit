@@ -59,9 +59,17 @@ class LaserCreator(bpy.types.Panel):
         row = layout.row()
         row.prop(context.object.laser_tool, "toggle_collision")
         row = layout.row()
+        row.prop(context.object.laser_tool, "toggle_targeter")
+        row = layout.row()
         row.prop(context.object.laser_tool, "laser_lifetime")
         row = layout.row()
+        row.prop(context.object.laser_tool, "laser_scale")
+        row = layout.row()
         row.prop(context.object.laser_tool, "laser_velocity")
+        row = layout.row()
+        row.prop(context.object.laser_tool, "toggle_decals")
+        row = layout.row()
+        row.prop(context.object.laser_tool, "decal_scale")
 
         row = layout.separator()
 
