@@ -1,4 +1,5 @@
 import bpy
+import math
 from mathutils import Vector, Matrix
 
 # 'Slave to Path' operator
@@ -230,6 +231,7 @@ class CreateStarfield(bpy.types.Operator):
 
 laser_collection_name = 'RogueToolkit_Lasers'
 decal_collection_name = 'RogueToolkit_Decals'
+muzzlef_collection_name = 'RogueToolkit_MuzzleFlash'
 
 def move_to_collection(name: str, obj) -> None:
     active_collection = bpy.context.collection
@@ -265,17 +267,14 @@ class CreateLaser(bpy.types.Operator):
         else:
             return {'CANCELLED'}
             
-        print(emitter.laser_tool.laser_scale[0])
-
         bpy.ops.mesh.primitive_cylinder_add(
-            radius=0.01,
-            depth=1,
+            radius=0.02,
+            depth=3,
             location=location,
             scale=emitter.laser_tool.laser_scale
         )
 
         new_laser = bpy.context.active_object
-
 
         bpy.context.view_layer.objects.active = emitter
         emitter.select_set(True)
@@ -326,6 +325,32 @@ class CreateLaser(bpy.types.Operator):
             for kf in fcurve.keyframe_points:
                 kf.interpolation = 'LINEAR'
 
+        ## -- Muzzle Flash -- ##
+        if emitter.laser_tool.toggle_muzzlef is True:
+
+            if emitter.laser_tool.muzzlef_obj is None:
+                bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=emitter.laser_tool.muzzlef_scale)
+                muzzlef = context.active_object
+                muzzlef.parent = emitter
+
+                bpy.context.view_layer.objects.active = emitter
+                emitter.select_set(True)
+                muzzlef.select_set(False)
+
+                move_to_collection(muzzlef_collection_name, muzzlef)
+
+                emitter.laser_tool.muzzlef_obj = muzzlef
+
+            # Animate visibility
+            emitter.laser_tool.muzzlef_obj.scale = (0, 0, 0)
+            emitter.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=cur_frame - 1)
+
+            emitter.laser_tool.muzzlef_obj.scale = emitter.laser_tool.muzzlef_scale
+            emitter.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=cur_frame)
+
+            emitter.laser_tool.muzzlef_obj.scale = (0, 0, 0)
+            emitter.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=cur_frame + 1)
+
         ## -- Raycasting -- ##
 
         if context.object.laser_tool.toggle_collision is True:
@@ -342,18 +367,28 @@ class CreateLaser(bpy.types.Operator):
             # In the event of a collision
             if result[0]:
 
-                print(result[4])
+                ignored_objects = []
 
-                if result[4].name not in bpy.data.collections.get(laser_collection_name).objects:
+                laser_collection = bpy.data.collections.get(laser_collection_name)
+                if laser_collection:
+                    ignored_objects += laser_collection.objects
+                # decal_collection = bpy.data.collections.get(decal_collection_name)
+                # if decal_collection:
+                #     ignored_objects += decal_collection.objects
+
+                if emitter.laser_tool.muzzlef_obj is not None:
+                    ignored_objects.append(emitter.laser_tool.muzzlef_obj)
+                
+                if not any(result[4].name == obj.name for obj in ignored_objects):
 
                     intersection_point = result[1]
                     normal = result[2]
-                    print("Laser hit at:", intersection_point)
+                    # print("Laser hit at:", intersection_point)
                     distance = (emitter.matrix_world.translation - result[1]).length
                     # print("Distance:", distance)
                     # print("Normal at hit point:", normal)
 
-                    print("Object hit:", result[4].name)
+                    # print("Object hit:", result[4].name)
 
                     collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
                     # print("Frame of Impact:", collision_frame)
@@ -366,7 +401,7 @@ class CreateLaser(bpy.types.Operator):
 
                     ## -- Create laser impact marker -- ##
                     if context.object.laser_tool.toggle_decals is True:
-                        bpy.ops.mesh.primitive_cube_add(enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
+                        bpy.ops.mesh.primitive_plane_add(enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
                         marker = context.active_object
                         bpy.context.view_layer.objects.active = emitter
                         emitter.select_set(True)
@@ -384,17 +419,13 @@ class CreateLaser(bpy.types.Operator):
                         marker.hide_render = False
                         marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
                         marker.keyframe_insert(data_path="hide_render", frame=collision_frame)
-            else:
-                print("Laser didn't hit any objects.")
 
+                        new_item = context.object.laser_tool.impact_decals.add()
+                        new_item.impact_decal = marker
 
         ## -- Save laser to emitter -- ##
         new_item = context.object.laser_tool.instantiated_lasers.add()
         new_item.instantiated_laser = new_laser
-
-        print(new_item.instantiated_laser)
-
-
 
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}
@@ -417,8 +448,20 @@ class CreateLaserEmitter(bpy.types.Operator):
         bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
         new_emitter = bpy.context.active_object
 
+        # Apply a 90-degree rotation around the X-axis
+        rotation_angle = math.radians(90)  # Convert degrees to radians
+        new_emitter.rotation_euler.x = rotation_angle
+
         self.report({'INFO'}, "Laser emitter created.")
         return {'FINISHED'}
+
+class RecalculateLasers(bpy.types.Operator):
+    bl_idname = "object.recalculate_lasers"
+    bl_label = "Recalculate Emitter's Lasers"
+    bl_description = "Recalculate all lasers created by this emitter. (for use when settings are changed, etc.)"
+
+    def execute(self, context):
+        print("Will recalculate all lasers!")
 
 class DeleteAllLasers(bpy.types.Operator):
     bl_idname = "object.delete_all_lasers"
@@ -435,17 +478,19 @@ class DeleteAllLasers(bpy.types.Operator):
 
             # Create a list of objects to delete
             objects_to_delete = [obj_ref.instantiated_laser for obj_ref in emitter_properties.instantiated_lasers]
-
-            print(objects_to_delete)
+            objects_to_delete += [obj_ref.impact_decal for obj_ref in emitter_properties.impact_decals]
 
             # Clear the collection property
             emitter_properties.instantiated_lasers.clear()
+            emitter_properties.impact_decals.clear()
 
-            print(objects_to_delete)
 
             # Delete the objects from the scene
             for obj in objects_to_delete:
                 bpy.data.objects.remove(obj, do_unlink=True)
+
+            if emitter_properties.muzzlef_obj:
+                bpy.data.objects.remove(emitter_properties.muzzlef_obj, do_unlink=True)
 
         # if target_collection_name in bpy.data.collections:
         #     target_collection = bpy.data.collections[target_collection_name]
@@ -456,6 +501,6 @@ class DeleteAllLasers(bpy.types.Operator):
 
         #     bpy.data.collections.remove(target_collection)
 
-        self.report({'INFO'}, "All lasers deleted.")
+        self.report({'INFO'}, "All emitter's lasers deleted.")
         return {'FINISHED'}
     

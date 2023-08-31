@@ -31,7 +31,10 @@ classes = [
     RiggingProperties,
     SceneProperties,
     LaserPointer,
-    LaserEmitterProperties]
+    ImpactDecalPointer,
+    LaserEmitterProperties,
+    RecalculateLasers
+    ]
 
 
 addon_keymaps = []

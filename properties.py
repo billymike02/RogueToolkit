@@ -80,9 +80,26 @@ class RiggingProperties(bpy.types.PropertyGroup):
 class LaserPointer(bpy.types.PropertyGroup):
     instantiated_laser: bpy.props.PointerProperty(type=bpy.types.Object)
 
+class ImpactDecalPointer(bpy.types.PropertyGroup):
+    impact_decal: bpy.props.PointerProperty(type=bpy.types.Object)
+
 class LaserEmitterProperties(bpy.types.PropertyGroup):
 
     instantiated_lasers: bpy.props.CollectionProperty(type=LaserPointer)
+
+    impact_decals: bpy.props.CollectionProperty(type=ImpactDecalPointer)
+
+    muzzlef_obj: bpy.props.PointerProperty(
+        name = "Muzzle Flash",
+        description = "Reference to emitter's muzzle flash object.",
+        type=bpy.types.Object
+    )
+    
+    muzzlef_scale: bpy.props.FloatVectorProperty(
+        name = "Muzzle Flash Scale",
+        description = "Peak size of the muzzle flash (if enabled).",
+        default = (0.5, 0.5, 0.5)
+    )
 
     laser_obj: bpy.props.PointerProperty(
         name = "Laser Object",
@@ -93,7 +110,7 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     laser_velocity: bpy.props.FloatProperty(
         name = "Laser Velocity",
         description = "Velocity of lasers created by emitter.",
-        default = 1.0,
+        default = 5.0,
         min = 1.0
     )
 
@@ -111,19 +128,25 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     )
 
     toggle_collision: bpy.props.BoolProperty(
-        name = "Toggle Collision",
+        name = "Collision",
         description = "Sets whether or not laser should be destroyed when colliding with another object.",
         default = True
     )
 
+    toggle_muzzlef: bpy.props.BoolProperty(
+        name = "Muzzle Flash",
+        description = "Toggle creation of muzzle flashes when the lasers are created by this emitter.",
+        default = True
+    )
+
     toggle_sparks: bpy.props.BoolProperty(
-        name = "Toggle Sparks",
+        name = "Sparks",
         description = "Set whether or not the laser should create sparks on impact.",
         default = True
     )
 
     toggle_decals: bpy.props.BoolProperty(
-        name = "Toggle Decals",
+        name = "Decals",
         description = "Set whether or not physical markers are made where the laser impacts objects.",
         default = True
     )
