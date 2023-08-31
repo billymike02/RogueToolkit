@@ -54,7 +54,7 @@ class MyUpdateFunctions:
 
 
 # define custom properties
-class MyProperties(bpy.types.PropertyGroup):
+class RiggingProperties(bpy.types.PropertyGroup):
     
     path: bpy.props.PointerProperty(
         name = "Path",
@@ -77,7 +77,12 @@ class MyProperties(bpy.types.PropertyGroup):
         default="FORWARD_X"
     )
 
+class LaserPointer(bpy.types.PropertyGroup):
+    instantiated_laser: bpy.props.PointerProperty(type=bpy.types.Object)
+
 class LaserEmitterProperties(bpy.types.PropertyGroup):
+
+    instantiated_lasers: bpy.props.CollectionProperty(type=LaserPointer)
 
     laser_obj: bpy.props.PointerProperty(
         name = "Laser Object",

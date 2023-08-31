@@ -2,7 +2,7 @@ import bpy
 from mathutils import Vector, Matrix
 
 # 'Slave to Path' operator
-class SimpleOperator(bpy.types.Operator):
+class AttachToPath(bpy.types.Operator):
     
     bl_idname = "object.simple_operator"
     bl_label = "Slave to Path"
@@ -17,19 +17,19 @@ class SimpleOperator(bpy.types.Operator):
             return {'CANCELLED'}
         
         bpy.ops.object.constraint_add(type='FOLLOW_PATH')
-        bpy.context.object.constraints["Follow Path"].target = context.object.my_tool.path
+        bpy.context.object.constraints["Follow Path"].target = context.object.rigging_tool.path
         bpy.context.object.constraints["Follow Path"].use_fixed_location = True
         bpy.context.object.constraints["Follow Path"].use_curve_follow = True
-        bpy.context.object.constraints["Follow Path"].forward_axis = context.object.my_tool.forward_axis
+        bpy.context.object.constraints["Follow Path"].forward_axis = context.object.rigging_tool.forward_axis
         bpy.context.object.constraints["Follow Path"].keyframe_insert("offset_factor", frame=bpy.context.scene.frame_current)
         bpy.context.object.constraints["Follow Path"].offset_factor = 1.0
         bpy.context.object.constraints["Follow Path"].keyframe_insert("offset_factor", frame=bpy.context.scene.frame_end)
 
 
-        context.object.my_tool.path.name = bpy.context.object.name + "_path"
+        context.object.rigging_tool.path.name = bpy.context.object.name + "_path"
         
 
-        context.object.my_tool.path = None
+        context.object.rigging_tool.path = None
         self.report({'INFO'}, "Successfully slaved object to path.")
 
         return {'FINISHED'}
@@ -45,8 +45,8 @@ class CreateLightspeedJump(bpy.types.Operator):
         obj = context.active_object
         frame = bpy.context.scene.frame_current
         
-        my_tool = obj.my_tool
-        lightspeed_frame = frame + my_tool.lightspeed_time
+        rigging_tool = obj.rigging_tool
+        lightspeed_frame = frame + rigging_tool.lightspeed_time
         
         # Keyframing
         obj.hide_viewport = False
@@ -92,8 +92,8 @@ class CreateLightspeedReturn(bpy.types.Operator):
         obj = context.active_object
         frame = bpy.context.scene.frame_current
         
-        my_tool = obj.my_tool
-        lightspeed_frame = frame - my_tool.lightspeed_time
+        rigging_tool = obj.rigging_tool
+        lightspeed_frame = frame - rigging_tool.lightspeed_time
         
         # Keyframe
         bpy.context.scene.frame_current = lightspeed_frame
@@ -153,16 +153,16 @@ class CreateFlightPlan(bpy.types.Operator):
         # Get the active object (which is the newly created path object)
         active_object = bpy.context.active_object
         # Assign the path object to the property
-        selected_obj.my_tool.path = active_object
+        selected_obj.rigging_tool.path = active_object
 
         # Clean-up
         context.view_layer.objects.active = selected_obj
-        context.object.my_tool.path = active_object
+        context.object.rigging_tool.path = active_object
         
         return {'FINISHED'}
 
 # 'Create Starfield' operator
-class WorldOperator(bpy.types.Operator):
+class CreateStarfield(bpy.types.Operator):
     bl_idname = "scene.create_starfield"
     bl_label = "Create Starfield"
     bl_description = "Creates a new starfield shader and makes it active in this scene"
@@ -231,7 +231,7 @@ class WorldOperator(bpy.types.Operator):
 target_collection_name = 'RogueToolkit_Lasers'
 
 class CreateLaser(bpy.types.Operator):
-    bl_idname = "scene.create_laser"
+    bl_idname = "object.create_laser"
     bl_label = "Create Laser"
     bl_description = "Lasers!!!"
 
@@ -347,6 +347,12 @@ class CreateLaser(bpy.types.Operator):
             else:
                 print("Laser didn't hit any objects.")
 
+        ## -- Save laser to emitter -- ##
+        new_item = context.object.laser_tool.instantiated_lasers.add()
+        new_item.instantiated_laser = new_laser
+
+        print(new_item.instantiated_laser)
+
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}
 
@@ -372,20 +378,40 @@ class CreateLaserEmitter(bpy.types.Operator):
         return {'FINISHED'}
 
 class DeleteAllLasers(bpy.types.Operator):
-    bl_idname = "scene.delete_all_lasers"
-    bl_label = "Delete All Lasers"
-    bl_description = "Delete all lasers in this scene."
+    bl_idname = "object.delete_all_lasers"
+    bl_label = "Delete Emitter's Lasers"
+    bl_description = "Delete all lasers created by this emitter."
 
     def execute(self, context):
 
-        if target_collection_name in bpy.data.collections:
-            target_collection = bpy.data.collections[target_collection_name]
+        selected_objects = bpy.context.selected_objects
+        active_object = bpy.context.active_object
 
-            objects_to_delete = target_collection.objects[:]
+        if active_object and active_object in selected_objects:
+            emitter_properties = active_object.laser_tool
+
+            # Create a list of objects to delete
+            objects_to_delete = [obj_ref.instantiated_laser for obj_ref in emitter_properties.instantiated_lasers]
+
+            print(objects_to_delete)
+
+            # Clear the collection property
+            emitter_properties.instantiated_lasers.clear()
+
+            print(objects_to_delete)
+
+            # Delete the objects from the scene
             for obj in objects_to_delete:
-                bpy.data.objects.remove(obj)
+                bpy.data.objects.remove(obj, do_unlink=True)
 
-            bpy.data.collections.remove(target_collection)
+        # if target_collection_name in bpy.data.collections:
+        #     target_collection = bpy.data.collections[target_collection_name]
+
+        #     objects_to_delete = target_collection.objects[:]
+        #     for obj in objects_to_delete:
+        #         bpy.data.objects.remove(obj)
+
+        #     bpy.data.collections.remove(target_collection)
 
         self.report({'INFO'}, "All lasers deleted.")
         return {'FINISHED'}

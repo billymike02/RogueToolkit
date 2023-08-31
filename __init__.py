@@ -17,19 +17,20 @@ bl_info = {
 
 # keep track of all classes to register
 classes = [
-    SimpleOperator, 
+    AttachToPath, 
     CreateFlightPlan, 
     CreateLightspeedJump, 
     CreateLightspeedReturn, 
     SimplePanel,
     LaserCreator,
     WorldPanel, 
-    WorldOperator,
+    CreateStarfield,
     CreateLaserEmitter, 
     CreateLaser,
     DeleteAllLasers,
-    MyProperties,
+    RiggingProperties,
     SceneProperties,
+    LaserPointer,
     LaserEmitterProperties]
 
 
@@ -39,7 +40,7 @@ def register():
     for cls in classes:
         bpy.utils.register_class(cls)
     
-    bpy.types.Object.my_tool = bpy.props.PointerProperty(type=MyProperties) # save custom properties
+    bpy.types.Object.rigging_tool = bpy.props.PointerProperty(type=RiggingProperties) # save custom properties
     bpy.types.Scene.scene_tool = bpy.props.PointerProperty(type=SceneProperties)
     bpy.types.Object.laser_tool = bpy.props.PointerProperty(type=LaserEmitterProperties)
 
@@ -48,7 +49,7 @@ def register():
     kc = wm.keyconfigs.addon
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
-        kmi = km.keymap_items.new(CreateLaser.bl_idname, type='P', value='PRESS', ctrl=False)
+        kmi = km.keymap_items.new(CreateLaser.bl_idname, type='K', value='PRESS', ctrl=False)
         addon_keymaps.append((km, kmi))
 
 
@@ -56,7 +57,7 @@ def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
     
-    del bpy.types.Object.my_tool # delete custom properties
+    del bpy.types.Object.rigging_tool # delete custom properties
     del bpy.types.Scene.scene_tool
     del bpy.types.Object.laser_tool
 

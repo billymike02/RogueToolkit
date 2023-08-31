@@ -16,25 +16,25 @@ class SimplePanel(bpy.types.Panel):
         
         layout = self.layout
         
-        my_tool = context.object.my_tool
+        rigging_tool = context.object.rigging_tool
         
         # Paths and anim
-        layout.prop(my_tool, "path")
+        layout.prop(rigging_tool, "path")
         row = layout.row()
         row.operator("object.simple_operator", icon = "LINKED")
         
-        if my_tool.path is None:
+        if rigging_tool.path is None:
             row.enabled = False
             
         layout.row().operator("object.create_flight_plan", icon = "STROKE")
         layout.label(text="Forward Axis")
-        layout.row().prop(my_tool, "forward_axis", expand=True)
+        layout.row().prop(rigging_tool, "forward_axis", expand=True)
         
         # Lightspeed
         layout.label(text="Quick Effects")
         box = layout.box()
         box.label(text="Lightspeed")
-        box.row().prop(my_tool, "lightspeed_time")
+        box.row().prop(rigging_tool, "lightspeed_time")
         box.row().operator("object.create_lightspeed_jump", icon="EXPORT")
         box.row().operator("object.create_lightspeed_return", icon="IMPORT")
 
@@ -46,11 +46,15 @@ class LaserCreator(bpy.types.Panel):
     bl_category = "Rogue Toolkit"
 
     def draw(self, context):
+
         scene_tool = context.scene.scene_tool
         layout = self.layout
 
         row = layout.row()
         row.operator("scene.create_laser_emitter")
+
+        if context.object is None:
+            return
 
         row = layout.row()
         row.prop(context.object.laser_tool, "toggle_collision")
@@ -62,10 +66,10 @@ class LaserCreator(bpy.types.Panel):
         row = layout.separator()
 
         row = layout.row()
-        row.operator("scene.create_laser")
+        row.operator("object.create_laser")
         row = layout.row()
         row.alert = True
-        row.operator("scene.delete_all_lasers", icon = 'TRASH')
+        row.operator("object.delete_all_lasers", icon = 'TRASH')
 
 
 class WorldPanel(bpy.types.Panel):
