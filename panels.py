@@ -80,6 +80,17 @@ class LaserCreator(bpy.types.Panel):
 
         row = layout.separator()
 
+        if context.object.laser_tool.child_emitter is False:
+            row = layout.row()
+            row.prop(context.object.laser_tool, "linked_emitters")
+            row = layout.row()
+            row.operator("object.create_linked_emitter")
+        else:
+            row = layout.row()
+            row.label(text="Child Emitter")
+
+        row = layout.separator()
+
         row = layout.row()
         row.operator("object.create_laser")
         row = layout.row()

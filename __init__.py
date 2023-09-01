@@ -27,11 +27,13 @@ classes = [
     CreateStarfield,
     CreateLaserEmitter, 
     CreateLaser,
+    CreateLinkedEmitter,
     DeleteAllLasers,
     RiggingProperties,
     SceneProperties,
     LaserPointer,
     ImpactDecalPointer,
+    LinkedEmitterPointer,
     LaserEmitterProperties,
     RecalculateLasers
     ]

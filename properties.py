@@ -83,11 +83,20 @@ class LaserPointer(bpy.types.PropertyGroup):
 class ImpactDecalPointer(bpy.types.PropertyGroup):
     impact_decal: bpy.props.PointerProperty(type=bpy.types.Object)
 
+class LinkedEmitterPointer(bpy.types.PropertyGroup):
+    linked_emitter: bpy.props.PointerProperty(type=bpy.types.Object)
+
 class LaserEmitterProperties(bpy.types.PropertyGroup):
 
     instantiated_lasers: bpy.props.CollectionProperty(type=LaserPointer)
 
     impact_decals: bpy.props.CollectionProperty(type=ImpactDecalPointer)
+
+    linked_emitters: bpy.props.CollectionProperty(type=LinkedEmitterPointer)
+
+    child_emitter: bpy.props.BoolProperty(
+        default = False
+    )
 
     valid_emitter: bpy.props.BoolProperty(
         default = False

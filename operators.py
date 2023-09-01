@@ -490,6 +490,29 @@ class CreateLaserEmitter(bpy.types.Operator):
         self.report({'INFO'}, "Laser emitter created.")
         return {'FINISHED'}
 
+class CreateLinkedEmitter(bpy.types.Operator):
+    bl_idname = "object.create_linked_emitter"
+    bl_label = "Create Linked Emitter"
+    bl_description = "TODO"
+
+    def execute(self, context):
+
+        main_emitter = bpy.context.active_object
+
+        bpy.ops.scene.create_laser_emitter()
+
+        new_emitter = bpy.context.active_object
+        new_emitter.laser_tool.child_emitter = True
+
+        added_emitter = main_emitter.laser_tool.linked_emitters.add()
+        added_emitter.linked_emitter = new_emitter
+
+        bpy.context.view_layer.objects.active = main_emitter
+        main_emitter.select_set(True)
+        added_emitter.linked_emitter.select_set(False)
+
+        return {'FINISHED'}
+
 class RecalculateLasers(bpy.types.Operator):
     bl_idname = "object.recalculate_lasers"
     bl_label = "Recalculate Emitter's Lasers"
