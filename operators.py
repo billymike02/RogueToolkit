@@ -375,7 +375,7 @@ class CreateLaser(bpy.types.Operator):
 
                 intersection_point = result[1]
                 normal = result[2]
-                print("Laser hit at:", intersection_point)
+                # print("Laser hit at:", intersection_point)
                 distance = (emitter.matrix_world.translation - result[1]).length
                 # print("Distance:", distance)
                 # print("Normal at hit point:", normal)
@@ -449,6 +449,9 @@ class CreateLaser(bpy.types.Operator):
         new_item = context.object.laser_tool.instantiated_lasers.add()
         new_item.instantiated_laser = new_laser
 
+        new_frame = context.object.laser_tool.laser_frames.add()
+        new_frame.laser_frame = bpy.context.scene.frame_current
+
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}
 
@@ -468,9 +471,10 @@ class CreateLaser(bpy.types.Operator):
             results.append(self.init_laser(linked_emitter, context))
 
         curr_selection = bpy.context.object
+        curr_selection.select_set(False)
+
         bpy.context.view_layer.objects.active = selected_emitter
         selected_emitter.select_set(True)
-        curr_selection.select_set(False)
 
         if 'CANCELLED' in results:
             return {'CANCELLED'}
@@ -535,8 +539,39 @@ class RecalculateLasers(bpy.types.Operator):
     bl_label = "Recalculate Emitter's Lasers"
     bl_description = "Recalculate all lasers created by this emitter. (for use when settings are changed, etc.)"
 
+    def recalculate_emitter_lasers(self, source, context):
+
+        laser_frames = []
+
+        for item in source.laser_tool.laser_frames:
+            laser_frames.append(item.laser_frame)
+
+        bpy.ops.object.delete_all_lasers()
+
+        laser_frames = set(laser_frames)
+        print("Laser frames:", laser_frames)
+
+        for laser_frame in laser_frames:
+            bpy.context.scene.frame_set(laser_frame)
+            print("executed once")
+            bpy.ops.object.create_laser()
+
     def execute(self, context):
-        print("Will recalculate all lasers!")
+
+        selected_emitter = bpy.context.object
+        curr_frame = bpy.context.scene.frame_current
+
+        self.recalculate_emitter_lasers(selected_emitter, context)
+
+        # for child in selected_emitter.laser_tool.linked_emitters:
+        #     linked_emitter = child.linked_emitter
+
+        #     self.recalculate_emitter_lasers(linked_emitter, context)
+
+        bpy.context.scene.frame_set(curr_frame)
+        return {'FINISHED'}
+
+
 
 class DeleteAllLasers(bpy.types.Operator):
     bl_idname = "object.delete_all_lasers"
@@ -554,6 +589,7 @@ class DeleteAllLasers(bpy.types.Operator):
         # Clear the collection property
         emitter_properties.instantiated_lasers.clear()
         emitter_properties.impact_decals.clear()
+        emitter_properties.laser_frames.clear()
 
 
         # Delete the objects from the scene

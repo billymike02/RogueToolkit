@@ -34,6 +34,7 @@ classes = [
     LaserPointer,
     ImpactDecalPointer,
     LinkedEmitterPointer,
+    LaserFrame,
     LaserEmitterProperties,
     RecalculateLasers
     ]
