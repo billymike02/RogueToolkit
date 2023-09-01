@@ -47,14 +47,17 @@ class LaserCreator(bpy.types.Panel):
 
     def draw(self, context):
 
-        scene_tool = context.scene.scene_tool
         layout = self.layout
+        
+        selected_objects = bpy.context.selected_objects
+        active_object = bpy.context.active_object
 
-        row = layout.row()
-        row.operator("scene.create_laser_emitter")
-
-        if context.object is None:
+        if active_object is None or len(selected_objects) == 0 or active_object.laser_tool.valid_emitter is False:
+            row = layout.row()
+            row.operator("scene.create_laser_emitter")
             return
+
+        print("valid emitter")
 
         row = layout.row()
         row.prop(context.object.laser_tool, "toggle_collision")
@@ -91,6 +94,7 @@ class WorldPanel(bpy.types.Panel):
     bl_label = "Rogue Toolkit"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
+    bl_context = 'world'
 
     def draw(self, context):
 

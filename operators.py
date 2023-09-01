@@ -1,5 +1,6 @@
 import bpy
 import math
+import random
 from mathutils import Vector, Matrix
 
 # 'Slave to Path' operator
@@ -360,17 +361,15 @@ class CreateLaser(bpy.types.Operator):
             laser_collection = bpy.data.collections.get(laser_collection_name)
             if laser_collection:
                 ignored_objects += laser_collection.objects
-            # decal_collection = bpy.data.collections.get(decal_collection_name)
-            # if decal_collection:
-            #     ignored_objects += decal_collection.objects
+            decal_collection = bpy.data.collections.get(decal_collection_name)
+            if decal_collection:
+                ignored_objects += decal_collection.objects
 
             if emitter.laser_tool.muzzlef_obj is not None:
                 ignored_objects.append(emitter.laser_tool.muzzlef_obj)
             
             for obj in ignored_objects:
                 obj.hide_viewport = True
-
-            print(ignored_objects)
 
 
             emitter_direction = Vector(emitter.matrix_world.col[2][:3])
@@ -405,8 +404,28 @@ class CreateLaser(bpy.types.Operator):
 
                 ## -- Create laser impact marker -- ##
                 if context.object.laser_tool.toggle_decals is True:
-                    bpy.ops.mesh.primitive_plane_add(enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
+                    bpy.ops.mesh.primitive_grid_add(size=2, enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
                     marker = context.active_object
+
+                    # Align to surface
+                    face_normal = Vector(result[2])
+                                
+                    z = Vector(marker.matrix_world.col[2][:3])
+                    axis = z.cross(face_normal)
+                    angle_cos = z.dot(face_normal)
+                    angle_cos = max(min(angle_cos, 1.0), -1.0)
+                    angle = math.acos(angle_cos)
+                    
+                    m = Matrix.Rotation(angle, 4, axis)
+                    
+                    marker.matrix_world = m @ marker.matrix_world
+                    
+                    vec = Vector((0.0, 0.0, round(random.uniform(0.003, 0.006), 10)))
+                    inv = marker.matrix_world.copy()
+                    inv.invert()
+                    vec_rot = vec @ inv
+                    marker.location = result[1] + vec_rot
+
                     bpy.context.view_layer.objects.active = emitter
                     emitter.select_set(True)
                     marker.select_set(False)
@@ -426,6 +445,13 @@ class CreateLaser(bpy.types.Operator):
 
                     new_item = context.object.laser_tool.impact_decals.add()
                     new_item.impact_decal = marker
+
+                    # Potentially disable for performance gains if it ends up beng unnecessary 
+                    shrinkwrap_modifier = marker.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
+                    shrinkwrap_modifier.target = result[4]
+                    shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
+                    shrinkwrap_modifier.offset = 0.01
+
 
             for obj in ignored_objects:
                 obj.hide_viewport = False
@@ -454,6 +480,8 @@ class CreateLaserEmitter(bpy.types.Operator):
 
         bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
         new_emitter = bpy.context.active_object
+
+        new_emitter.laser_tool.valid_emitter = True
 
         # Apply a 90-degree rotation around the X-axis
         rotation_angle = math.radians(90)  # Convert degrees to radians

@@ -89,6 +89,10 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
 
     impact_decals: bpy.props.CollectionProperty(type=ImpactDecalPointer)
 
+    valid_emitter: bpy.props.BoolProperty(
+        default = False
+    )
+
     muzzlef_obj: bpy.props.PointerProperty(
         name = "Muzzle Flash",
         description = "Reference to emitter's muzzle flash object.",
