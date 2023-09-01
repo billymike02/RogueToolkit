@@ -56,9 +56,12 @@ class LaserCreator(bpy.types.Panel):
             row = layout.row()
             row.operator("scene.create_laser_emitter")
             return
-
-        print("valid emitter")
-
+        
+        if context.object.laser_tool.child_emitter is True:
+            row = layout.row()
+            row.label(text="Child Emitter")
+            layout.enabled = False
+        
         row = layout.row()
         row.prop(context.object.laser_tool, "toggle_collision")
         row = layout.row()
@@ -80,14 +83,10 @@ class LaserCreator(bpy.types.Panel):
 
         row = layout.separator()
 
-        if context.object.laser_tool.child_emitter is False:
-            row = layout.row()
-            row.prop(context.object.laser_tool, "linked_emitters")
-            row = layout.row()
-            row.operator("object.create_linked_emitter")
-        else:
-            row = layout.row()
-            row.label(text="Child Emitter")
+        row = layout.row()
+        row.prop(context.object.laser_tool, "linked_emitters")
+        row = layout.row()
+        row.operator("object.create_linked_emitter")
 
         row = layout.separator()
 
@@ -98,6 +97,8 @@ class LaserCreator(bpy.types.Panel):
         row = layout.row()
         row.alert = True
         row.operator("object.delete_all_lasers", icon = 'TRASH')
+
+
 
 
 class WorldPanel(bpy.types.Panel):

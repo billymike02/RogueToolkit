@@ -507,6 +507,8 @@ class CreateLinkedEmitter(bpy.types.Operator):
         added_emitter = main_emitter.laser_tool.linked_emitters.add()
         added_emitter.linked_emitter = new_emitter
 
+
+
         bpy.context.view_layer.objects.active = main_emitter
         main_emitter.select_set(True)
         added_emitter.linked_emitter.select_set(False)

@@ -86,7 +86,51 @@ class ImpactDecalPointer(bpy.types.PropertyGroup):
 class LinkedEmitterPointer(bpy.types.PropertyGroup):
     linked_emitter: bpy.props.PointerProperty(type=bpy.types.Object)
 
+
+
 class LaserEmitterProperties(bpy.types.PropertyGroup):
+
+    def update_callback(self, context):
+
+        # print(self,": is trying to update and they're a:", self.child_emitter)
+
+        # avoid updating if you're linked to a parent
+        if self.child_emitter is True:
+            return
+
+        for child_sh in self.linked_emitters:
+            linked_emitter = child_sh.linked_emitter
+            o = linked_emitter.laser_tool
+
+            # Synchronize all settings that you want to copy from parent to linked here.
+            if o.toggle_collision != self.toggle_collision:
+                o.toggle_collision = self.toggle_collision
+            if o.laser_scale != self.laser_scale:
+                o.laser_scale = self.laser_scale
+            if o.muzzlef_obj != self.muzzlef_obj:
+                o.muzzlef_obj = self.muzzlef_obj
+            if o.muzzlef_scale != self.muzzlef_scale:
+                o.muzzlef_scale = self.muzzlef_scale
+            if o.laser_obj != self.laser_obj:
+                o.laser_obj = self.laser_obj
+            if o.laser_velocity != self.laser_velocity:
+                o.laser_velocity = self.laser_velocity
+            if o.laser_lifetime != self.laser_lifetime:
+                o.laser_lifetime = self.laser_lifetime
+            if o.toggle_muzzlef != self.toggle_muzzlef:
+                o.toggle_muzzlef = self.toggle_muzzlef
+            if o.toggle_sparks != self.toggle_sparks:
+                o.toggle_sparks = self.toggle_sparks
+            if o.toggle_decals != self.toggle_decals:
+                o.toggle_decals = self.toggle_decals
+            if o.decal_scale != self.decal_scale:
+                o.decal_scale = self.decal_scale
+            if o.tracked_obj != self.tracked_obj:
+                o.tracked_obj = self.tracked_obj
+            if o.toggle_targeter != self.toggle_targeter:
+                o.toggle_targeter = self.toggle_targeter
+
+        # print(self,"has updated its settings.")
 
     instantiated_lasers: bpy.props.CollectionProperty(type=LaserPointer)
 
@@ -124,44 +168,51 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         name = "Laser Velocity",
         description = "Velocity of lasers created by emitter.",
         default = 5.0,
-        min = 1.0
+        min = 1.0,
+        update=update_callback
     )
 
     laser_lifetime: bpy.props.IntProperty(
         name = "Laser Lifetime",
         description = "How long the laser will 'exist' within the scene.",
         default = 50,
-        min = 1
+        min = 1,
+        update=update_callback
     )
 
     laser_scale: bpy.props.FloatVectorProperty(
         name = "Laser Scale",
         description = "The scale of the lasers to be instantiated.",
         default = (1.0, 1.0, 1.0),
+        update=update_callback
     )
 
     toggle_collision: bpy.props.BoolProperty(
         name = "Collision",
         description = "Sets whether or not laser should be destroyed when colliding with another object.",
-        default = True
+        default = True,
+        update=update_callback
     )
 
     toggle_muzzlef: bpy.props.BoolProperty(
         name = "Muzzle Flash",
         description = "Toggle creation of muzzle flashes when the lasers are created by this emitter.",
-        default = True
+        default = True,
+        update=update_callback
     )
 
     toggle_sparks: bpy.props.BoolProperty(
         name = "Sparks",
         description = "Set whether or not the laser should create sparks on impact.",
-        default = True
+        default = True,
+        update=update_callback
     )
 
     toggle_decals: bpy.props.BoolProperty(
         name = "Decals",
         description = "Set whether or not physical markers are made where the laser impacts objects.",
-        default = True
+        default = True,
+        update=update_callback
     )
 
     decal_scale: bpy.props.FloatVectorProperty(
