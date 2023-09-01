@@ -107,8 +107,8 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
                 o.toggle_collision = self.toggle_collision
             if o.laser_scale != self.laser_scale:
                 o.laser_scale = self.laser_scale
-            if o.muzzlef_obj != self.muzzlef_obj:
-                o.muzzlef_obj = self.muzzlef_obj
+            # if o.muzzlef_obj != self.muzzlef_obj:
+            #     o.muzzlef_obj = self.muzzlef_obj
             if o.muzzlef_scale != self.muzzlef_scale:
                 o.muzzlef_scale = self.muzzlef_scale
             if o.laser_obj != self.laser_obj:

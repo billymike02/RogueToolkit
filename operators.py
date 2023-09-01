@@ -3,7 +3,11 @@ import math
 import random
 from mathutils import Vector, Matrix
 
-# 'Slave to Path' operator
+# Hard-coded names
+laser_collection_name = 'RogueToolkit_Lasers'
+decal_collection_name = 'RogueToolkit_Decals'
+muzzlef_collection_name = 'RogueToolkit_MuzzleFlash'
+
 class AttachToPath(bpy.types.Operator):
     
     bl_idname = "object.simple_operator"
@@ -230,10 +234,6 @@ class CreateStarfield(bpy.types.Operator):
         self.report({'INFO'}, "World updated to designated starfield.")
         return {'FINISHED'}
 
-laser_collection_name = 'RogueToolkit_Lasers'
-decal_collection_name = 'RogueToolkit_Decals'
-muzzlef_collection_name = 'RogueToolkit_MuzzleFlash'
-
 def move_to_collection(name: str, obj) -> None:
     active_collection = bpy.context.collection
     target_collection = None
@@ -252,21 +252,10 @@ class CreateLaser(bpy.types.Operator):
     bl_label = "Create Laser"
     bl_description = "Lasers!!!"
 
-    def execute(self, context):
+    def init_laser(self, source, context):
         location = (0, 0, 0)
 
-        selected_objects = bpy.context.selected_objects
-        active_object = bpy.context.active_object
-        emitter = None
-
-        if active_object and active_object in selected_objects:
-            emitter = active_object
-
-            # Get the location of the active object
-            location = emitter.location
-
-        else:
-            return {'CANCELLED'}
+        emitter = source
             
         bpy.ops.mesh.primitive_cylinder_add(
             radius=0.02,
@@ -368,8 +357,8 @@ class CreateLaser(bpy.types.Operator):
             if emitter.laser_tool.muzzlef_obj is not None:
                 ignored_objects.append(emitter.laser_tool.muzzlef_obj)
             
-            for obj in ignored_objects:
-                obj.hide_viewport = True
+            for source in ignored_objects:
+                source.hide_viewport = True
 
 
             emitter_direction = Vector(emitter.matrix_world.col[2][:3])
@@ -453,8 +442,8 @@ class CreateLaser(bpy.types.Operator):
                     shrinkwrap_modifier.offset = 0.01
 
 
-            for obj in ignored_objects:
-                obj.hide_viewport = False
+            for source in ignored_objects:
+                source.hide_viewport = False
 
         ## -- Save laser to emitter -- ##
         new_item = context.object.laser_tool.instantiated_lasers.add()
@@ -462,6 +451,32 @@ class CreateLaser(bpy.types.Operator):
 
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}
+
+    def execute(self, context):
+
+        if bpy.context.object.laser_tool.child_emitter is True:
+            return {'CANCELLED'}
+
+        results = []
+
+        selected_emitter = bpy.context.object
+        results.append(self.init_laser(selected_emitter, context))
+
+        for child in selected_emitter.laser_tool.linked_emitters:
+            linked_emitter = child.linked_emitter
+
+            results.append(self.init_laser(linked_emitter, context))
+
+        curr_selection = bpy.context.object
+        bpy.context.view_layer.objects.active = selected_emitter
+        selected_emitter.select_set(True)
+        curr_selection.select_set(False)
+
+        if 'CANCELLED' in results:
+            return {'CANCELLED'}
+        else:
+            return {'FINISHED'}
+
 
 class CreateLaserEmitter(bpy.types.Operator):
     bl_idname = "scene.create_laser_emitter"
@@ -528,39 +543,37 @@ class DeleteAllLasers(bpy.types.Operator):
     bl_label = "Delete Emitter's Lasers"
     bl_description = "Delete all lasers created by this emitter."
 
-    def execute(self, context):
+    def delete_emitters_lasers(self, source, context):
 
-        selected_objects = bpy.context.selected_objects
-        active_object = bpy.context.active_object
+        emitter_properties = source.laser_tool
 
-        if active_object and active_object in selected_objects:
-            emitter_properties = active_object.laser_tool
+        # Create a list of objects to delete
+        objects_to_delete = [obj_ref.instantiated_laser for obj_ref in emitter_properties.instantiated_lasers]
+        objects_to_delete += [obj_ref.impact_decal for obj_ref in emitter_properties.impact_decals]
 
-            # Create a list of objects to delete
-            objects_to_delete = [obj_ref.instantiated_laser for obj_ref in emitter_properties.instantiated_lasers]
-            objects_to_delete += [obj_ref.impact_decal for obj_ref in emitter_properties.impact_decals]
-
-            # Clear the collection property
-            emitter_properties.instantiated_lasers.clear()
-            emitter_properties.impact_decals.clear()
+        # Clear the collection property
+        emitter_properties.instantiated_lasers.clear()
+        emitter_properties.impact_decals.clear()
 
 
-            # Delete the objects from the scene
-            for obj in objects_to_delete:
-                bpy.data.objects.remove(obj, do_unlink=True)
+        # Delete the objects from the scene
+        for obj in objects_to_delete:
+            bpy.data.objects.remove(obj, do_unlink=True)
 
-            if emitter_properties.muzzlef_obj:
-                bpy.data.objects.remove(emitter_properties.muzzlef_obj, do_unlink=True)
-
-        # if target_collection_name in bpy.data.collections:
-        #     target_collection = bpy.data.collections[target_collection_name]
-
-        #     objects_to_delete = target_collection.objects[:]
-        #     for obj in objects_to_delete:
-        #         bpy.data.objects.remove(obj)
-
-        #     bpy.data.collections.remove(target_collection)
+        if emitter_properties.muzzlef_obj:
+            bpy.data.objects.remove(emitter_properties.muzzlef_obj, do_unlink=True)
 
         self.report({'INFO'}, "All emitter's lasers deleted.")
         return {'FINISHED'}
     
+
+    def execute(self, context):
+
+        selected_emitter = bpy.context.object
+
+        self.delete_emitters_lasers(selected_emitter, context)
+        for child in selected_emitter.laser_tool.linked_emitters:
+            linked_emitter = child.linked_emitter
+            self.delete_emitters_lasers(linked_emitter, context)
+        
+        return {'FINISHED'}
