@@ -147,6 +147,11 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         default = False
     )
 
+    parent_emitter: bpy.props.PointerProperty(
+        name = "Parent Emitter",
+        type = bpy.types.Object
+    )
+
     valid_emitter: bpy.props.BoolProperty(
         default = False
     )

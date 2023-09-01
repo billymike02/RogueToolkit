@@ -526,7 +526,7 @@ class CreateLinkedEmitter(bpy.types.Operator):
         added_emitter = main_emitter.laser_tool.linked_emitters.add()
         added_emitter.linked_emitter = new_emitter
 
-
+        added_emitter.linked_emitter.laser_tool.parent_emitter = main_emitter
 
         bpy.context.view_layer.objects.active = main_emitter
         main_emitter.select_set(True)
@@ -613,3 +613,26 @@ class DeleteAllLasers(bpy.types.Operator):
             self.delete_emitters_lasers(linked_emitter, context)
         
         return {'FINISHED'}
+
+
+class DeleteLinkedEmitter(bpy.types.Operator):
+    bl_idname = "object.delete_linked_emitter"
+    bl_label = "Delete Linked Emitter"
+    bl_description = "DaDASD"
+
+    def execute(self, context):
+        if context.object.laser_tool.child_emitter is False:
+            return {'CANCELLED'}
+        
+        coll =  context.object.laser_tool.parent_emitter.laser_tool.linked_emitters
+        i = 0
+        for item in coll:
+            if item.linked_emitter == context.object:
+                coll.remove(i)
+            i += 1
+
+        bpy.ops.object.delete_all_lasers()
+        bpy.data.objects.remove(context.object, do_unlink=True)
+
+        return {'FINISHED'}
+

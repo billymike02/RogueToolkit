@@ -57,10 +57,13 @@ class LaserCreator(bpy.types.Panel):
             row.operator("scene.create_laser_emitter")
             return
         
+        row = layout.row()
+        row.operator("object.delete_linked_emitter")
+        
         if context.object.laser_tool.child_emitter is True:
             row = layout.row()
             row.label(text="Child Emitter")
-            layout.enabled = False
+            # layout.enabled = False
         
         row = layout.row()
         row.prop(context.object.laser_tool, "toggle_collision")

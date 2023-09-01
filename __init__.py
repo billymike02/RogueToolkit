@@ -36,7 +36,8 @@ classes = [
     LinkedEmitterPointer,
     LaserFrame,
     LaserEmitterProperties,
-    RecalculateLasers
+    RecalculateLasers,
+    DeleteLinkedEmitter
     ]
 
 
