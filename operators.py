@@ -355,6 +355,24 @@ class CreateLaser(bpy.types.Operator):
 
         if context.object.laser_tool.toggle_collision is True:
 
+            ignored_objects = []
+
+            laser_collection = bpy.data.collections.get(laser_collection_name)
+            if laser_collection:
+                ignored_objects += laser_collection.objects
+            # decal_collection = bpy.data.collections.get(decal_collection_name)
+            # if decal_collection:
+            #     ignored_objects += decal_collection.objects
+
+            if emitter.laser_tool.muzzlef_obj is not None:
+                ignored_objects.append(emitter.laser_tool.muzzlef_obj)
+            
+            for obj in ignored_objects:
+                obj.hide_viewport = True
+
+            print(ignored_objects)
+
+
             emitter_direction = Vector(emitter.matrix_world.col[2][:3])
             collision_frame = None
                             
@@ -367,61 +385,50 @@ class CreateLaser(bpy.types.Operator):
             # In the event of a collision
             if result[0]:
 
-                ignored_objects = []
+                intersection_point = result[1]
+                normal = result[2]
+                print("Laser hit at:", intersection_point)
+                distance = (emitter.matrix_world.translation - result[1]).length
+                # print("Distance:", distance)
+                # print("Normal at hit point:", normal)
 
-                laser_collection = bpy.data.collections.get(laser_collection_name)
-                if laser_collection:
-                    ignored_objects += laser_collection.objects
-                # decal_collection = bpy.data.collections.get(decal_collection_name)
-                # if decal_collection:
-                #     ignored_objects += decal_collection.objects
+                # print("Object hit:", result[4].name)
 
-                if emitter.laser_tool.muzzlef_obj is not None:
-                    ignored_objects.append(emitter.laser_tool.muzzlef_obj)
-                
-                if not any(result[4].name == obj.name for obj in ignored_objects):
+                collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
+                # print("Frame of Impact:", collision_frame)
 
-                    intersection_point = result[1]
-                    normal = result[2]
-                    # print("Laser hit at:", intersection_point)
-                    distance = (emitter.matrix_world.translation - result[1]).length
-                    # print("Distance:", distance)
-                    # print("Normal at hit point:", normal)
+                # 'Destroy' the laser
+                new_laser.hide_viewport = True
+                new_laser.hide_render = True
+                new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
+                new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
 
-                    # print("Object hit:", result[4].name)
+                ## -- Create laser impact marker -- ##
+                if context.object.laser_tool.toggle_decals is True:
+                    bpy.ops.mesh.primitive_plane_add(enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
+                    marker = context.active_object
+                    bpy.context.view_layer.objects.active = emitter
+                    emitter.select_set(True)
+                    marker.select_set(False)
 
-                    collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
-                    # print("Frame of Impact:", collision_frame)
+                    move_to_collection(decal_collection_name, marker)
 
-                    # 'Destroy' the laser
-                    new_laser.hide_viewport = True
-                    new_laser.hide_render = True
-                    new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
-                    new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
+                    # Animate visibility
+                    marker.hide_viewport = True
+                    marker.hide_render = True
+                    marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame - 1)
+                    marker.keyframe_insert(data_path="hide_render", frame=collision_frame - 1)
 
-                    ## -- Create laser impact marker -- ##
-                    if context.object.laser_tool.toggle_decals is True:
-                        bpy.ops.mesh.primitive_plane_add(enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
-                        marker = context.active_object
-                        bpy.context.view_layer.objects.active = emitter
-                        emitter.select_set(True)
-                        marker.select_set(False)
+                    marker.hide_viewport = False
+                    marker.hide_render = False
+                    marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
+                    marker.keyframe_insert(data_path="hide_render", frame=collision_frame)
 
-                        move_to_collection(decal_collection_name, marker)
+                    new_item = context.object.laser_tool.impact_decals.add()
+                    new_item.impact_decal = marker
 
-                        # Animate visibility
-                        marker.hide_viewport = True
-                        marker.hide_render = True
-                        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame - 1)
-                        marker.keyframe_insert(data_path="hide_render", frame=collision_frame - 1)
-
-                        marker.hide_viewport = False
-                        marker.hide_render = False
-                        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
-                        marker.keyframe_insert(data_path="hide_render", frame=collision_frame)
-
-                        new_item = context.object.laser_tool.impact_decals.add()
-                        new_item.impact_decal = marker
+            for obj in ignored_objects:
+                obj.hide_viewport = False
 
         ## -- Save laser to emitter -- ##
         new_item = context.object.laser_tool.instantiated_lasers.add()
