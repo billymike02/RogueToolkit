@@ -57,52 +57,54 @@ class LaserCreator(bpy.types.Panel):
             row.operator("scene.create_laser_emitter")
             return
         
-        row = layout.row()
-        row.operator("object.delete_linked_emitter")
+        laser_tool = context.object.laser_tool
         
-        if context.object.laser_tool.child_emitter is True:
+        if laser_tool.child_emitter is True:
             row = layout.row()
-            row.label(text="Child Emitter")
-            # layout.enabled = False
-        
-        row = layout.row()
-        row.prop(context.object.laser_tool, "toggle_collision")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "toggle_muzzlef")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "toggle_targeter")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "laser_lifetime")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "laser_scale")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "muzzlef_scale")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "laser_velocity")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "toggle_decals")
-        row = layout.row()
-        row.prop(context.object.laser_tool, "decal_scale")
+            row.operator("object.delete_linked_emitter")
+            row = layout.row()
+            row.label(text="Parent Emitter: " + context.object.laser_tool.parent_emitter.name)
+        else:
+            row = layout.row()
+            row.prop(laser_tool, "toggle_targeter")
+            row = layout.row()
+            row.prop(laser_tool, "laser_lifetime")
+            row = layout.row()
+            row.prop(laser_tool, "laser_scale")
+            row = layout.row()
+            row.prop(laser_tool, "laser_velocity")
 
-        row = layout.separator()
+            row = layout.separator()
+            row = layout.row()
+            row.prop(laser_tool, "toggle_muzzlef")
+            if laser_tool.toggle_muzzlef is True:
+                box = layout.box()
+                box.prop(laser_tool, "muzzlef_scale")
+            row = layout.separator()
 
-        row = layout.row()
-        row.prop(context.object.laser_tool, "linked_emitters")
-        row = layout.row()
-        row.operator("object.create_linked_emitter")
+            row = layout.separator()
+            row = layout.row()
+            row.prop(laser_tool, "toggle_collision")
+            if laser_tool.toggle_collision is True:
+                box = layout.box()
+                box.prop(laser_tool, "toggle_decals")
+                row = box.row()
+                row.prop(laser_tool, "decal_scale")
 
-        row = layout.separator()
+            row = layout.separator()
+            row = layout.row()
+            row.prop(laser_tool, "linked_emitters")
+            row = layout.row()
+            row.operator("object.create_linked_emitter")
+            row = layout.separator()
 
-        row = layout.row()
-        row.operator("object.create_laser")
-        row = layout.row()
-        row.operator("object.recalculate_lasers")
-        row = layout.row()
-        row.alert = True
-        row.operator("object.delete_all_lasers", icon = 'TRASH')
-
-
-
+            row = layout.row()
+            row.operator("object.create_laser")
+            row = layout.row()
+            row.operator("object.recalculate_lasers")
+            row = layout.row()
+            row.alert = True
+            row.operator("object.delete_all_lasers", icon = 'TRASH')
 
 class WorldPanel(bpy.types.Panel):
     bl_idname = "PROPERTIES_PT_world_panel"

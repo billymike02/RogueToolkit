@@ -252,6 +252,7 @@ class CreateLaser(bpy.types.Operator):
     bl_label = "Create Laser"
     bl_description = "Lasers!!!"
 
+
     def init_laser(self, source, context):
         location = (0, 0, 0)
 
@@ -375,7 +376,7 @@ class CreateLaser(bpy.types.Operator):
 
                 intersection_point = result[1]
                 normal = result[2]
-                # print("Laser hit at:", intersection_point)
+                print("Laser hit at:", intersection_point)
                 distance = (emitter.matrix_world.translation - result[1]).length
                 # print("Distance:", distance)
                 # print("Normal at hit point:", normal)
@@ -393,7 +394,10 @@ class CreateLaser(bpy.types.Operator):
 
                 ## -- Create laser impact marker -- ##
                 if context.object.laser_tool.toggle_decals is True:
-                    bpy.ops.mesh.primitive_grid_add(size=2, enter_editmode=False, align='WORLD', location=intersection_point, scale=context.object.laser_tool.decal_scale)
+
+
+
+                    bpy.ops.mesh.primitive_grid_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=context.object.laser_tool.decal_scale)
                     marker = context.active_object
 
                     # Align to surface
@@ -404,16 +408,15 @@ class CreateLaser(bpy.types.Operator):
                     angle_cos = z.dot(face_normal)
                     angle_cos = max(min(angle_cos, 1.0), -1.0)
                     angle = math.acos(angle_cos)
-                    
                     m = Matrix.Rotation(angle, 4, axis)
-                    
                     marker.matrix_world = m @ marker.matrix_world
-                    
                     vec = Vector((0.0, 0.0, round(random.uniform(0.003, 0.006), 10)))
                     inv = marker.matrix_world.copy()
                     inv.invert()
                     vec_rot = vec @ inv
                     marker.location = result[1] + vec_rot
+
+                    print(marker.location)
 
                     bpy.context.view_layer.objects.active = emitter
                     emitter.select_set(True)
@@ -435,11 +438,21 @@ class CreateLaser(bpy.types.Operator):
                     new_item = context.object.laser_tool.impact_decals.add()
                     new_item.impact_decal = marker
 
-                    # Potentially disable for performance gains if it ends up beng unnecessary 
+                    # Potentially disable for performance gains if it ends up being unnecessary 
                     shrinkwrap_modifier = marker.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
                     shrinkwrap_modifier.target = result[4]
                     shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
                     shrinkwrap_modifier.offset = 0.01
+
+                    # Create a Child Of constraint
+                    child_of_constraint = marker.constraints.new(type='CHILD_OF')
+
+                    # Set the target to result[4] (assuming result[4] is a valid object)
+                    child_of_constraint.target = result[4]
+
+                    # Enable the constraint
+                    child_of_constraint.mute = False
+
 
 
             for source in ignored_objects:
