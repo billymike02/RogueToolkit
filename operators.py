@@ -325,6 +325,25 @@ class CreateLaser(bpy.types.Operator):
             for obj in collection.objects:
                 move_to_collection(decal_collection_name, obj)
                 decal = obj
+
+                bpy.context.view_layer.objects.active = decal
+                decal.select_set(True)
+
+                mat_name = obj.name.split(".")[0]
+
+                print("matname:", mat_name)
+
+                if bpy.data.materials.get(mat_name) and obj.material_slots[0].material != bpy.data.materials.get(mat_name):
+                    bpy.data.materials.remove(obj.material_slots[0].material)
+
+                     # Remove all material slots
+                    for i in range(len(decal.material_slots) - 1, -1, -1):
+                        bpy.context.object.active_material_index = i
+                        bpy.ops.object.material_slot_remove()
+
+                    bpy.ops.object.material_slot_remove()
+                    decal.data.materials.append(bpy.data.materials[mat_name])
+
                 break
 
         if decal is None:
