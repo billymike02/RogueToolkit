@@ -252,63 +252,244 @@ class CreateLaser(bpy.types.Operator):
     bl_label = "Create Laser"
     bl_description = "Lasers!!!"
 
+    def set_visibility(self, context, obj, fshow, fhide):
+        # Set initial visibility
+        obj.hide_viewport = True
+        obj.hide_render = True
+        obj.keyframe_insert(data_path="hide_viewport", frame=fshow - 1)
+        obj.keyframe_insert(data_path="hide_render", frame=fshow - 1)
+
+        # Make the empty visible before it starts moving
+        obj.hide_viewport = False
+        obj.hide_render = False
+        obj.keyframe_insert(data_path="hide_viewport", frame=fshow)
+        obj.keyframe_insert(data_path="hide_render", frame=fshow)
+
+        # Set visibility to hide again after animation ends
+        obj.hide_viewport = True
+        obj.hide_render = True
+        obj.keyframe_insert(data_path="hide_viewport", frame=fhide)
+        obj.keyframe_insert(data_path="hide_render", frame=fhide)
+
+        #making animation linear
+        fcurves = obj.animation_data.action.fcurves
+        for fcurve in fcurves:
+            for kf in fcurve.keyframe_points:
+                kf.interpolation = 'LINEAR'
+
+    def ignore_objects(self, context, setting: bool, emitter):
+
+        ignored_objects = []
+
+        laser_collection = bpy.data.collections.get(laser_collection_name)
+        if laser_collection:
+            ignored_objects += laser_collection.objects
+        decal_collection = bpy.data.collections.get(decal_collection_name)
+        if decal_collection:
+            ignored_objects += decal_collection.objects
+
+        if emitter.laser_tool.muzzlef_obj is not None:
+            ignored_objects.append(emitter.laser_tool.muzzlef_obj)
+
+        for source in ignored_objects:
+            source.hide_viewport = setting
+
+    def create_decal(self, context, source, rc_result, collision_frame):
+
+        origin_frame = context.scene.frame_current
+
+        bpy.ops.mesh.primitive_grid_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=context.object.laser_tool.decal_scale)
+        marker = context.active_object
+
+        # Align to surface
+        face_normal = Vector(rc_result[2])
+                    
+        z = Vector(marker.matrix_world.col[2][:3])
+        axis = z.cross(face_normal)
+        angle_cos = z.dot(face_normal)
+        angle_cos = max(min(angle_cos, 1.0), -1.0)
+        angle = math.acos(angle_cos)
+        m = Matrix.Rotation(angle, 4, axis)
+        marker.matrix_world = m @ marker.matrix_world
+        vec = Vector((0.0, 0.0, round(random.uniform(0.003, 0.006), 10)))
+        inv = marker.matrix_world.copy()
+        inv.invert()
+        vec_rot = vec @ inv
+        marker.location = rc_result[1] + vec_rot
+
+        print("Marker location:", marker.location)
+
+        bpy.context.view_layer.objects.active = source
+        source.select_set(True)
+        marker.select_set(False)
+
+        move_to_collection(decal_collection_name, marker)
+
+        # Animate visibility
+        marker.hide_viewport = True
+        marker.hide_render = True
+        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame - 1)
+        marker.keyframe_insert(data_path="hide_render", frame=collision_frame - 1)
+
+        marker.hide_viewport = False
+        marker.hide_render = False
+        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
+        marker.keyframe_insert(data_path="hide_render", frame=collision_frame)
+
+        new_item = context.object.laser_tool.impact_decals.add()
+        new_item.impact_decal = marker
+
+        context.scene.frame_set(collision_frame)
+
+        # Potentially disable for performance gains if it ends up being unnecessary 
+        shrinkwrap_modifier = marker.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
+        shrinkwrap_modifier.target = rc_result[4]
+        shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
+        shrinkwrap_modifier.offset = 0.01
+
+        # Create a Child Of constraint
+        child_of_constraint = marker.constraints.new(type='CHILD_OF')
+        # Set the target to result[4] (assuming result[4] is a valid object)
+        child_of_constraint.target = rc_result[4]
+
+        # Enable the constraint
+        child_of_constraint.mute = False
+
+        context.scene.frame_set(origin_frame)
+
+    # Make source emitter check for collisions during the entire life of the projectile to be fired
+    def check_collision(self, source, projectile, lifetime, context):
+
+        origin_frame = context.scene.frame_current
+        context.scene.frame_set(origin_frame)
+
+        # Save locations of the moving projectile
+        locs = []
+        startf = origin_frame
+        endf = startf + lifetime
+
+        while context.scene.frame_current <= endf:
+
+            locs.append(projectile.location.copy())
+
+            # Increase the frame
+            context.scene.frame_set(context.scene.frame_current + 1)
+
+        context.scene.frame_set(origin_frame)
+
+        # Ensure that only the correct type of objects will be hit by a ray-cast
+        self.ignore_objects(context, True, source)
+
+        # For each frame in the lifetime of the projectile, check if there has been a hit.
+        startf = origin_frame
+        endf = startf + lifetime
+        f = 0
+        min_dist = None
+
+        data = []
+
+        while context.scene.frame_current <= endf:
+
+            source_dir = Vector(source.matrix_world.col[2][:3])
+            result = bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph,source.matrix_world.translation,source_dir)
+            
+            # velocity = source.laser_tool.laser_velocity
+    
+
+            if result[0]:
+                intersection_point = result[1]
+                normal = result[2]
+                distance = (locs[f] - intersection_point).length
+                coll_frame = None
+
+                if min_dist is None:
+                    min_dist = distance
+                elif distance < min_dist:
+                    min_dist = distance 
+                elif distance > min_dist:
+                    coll_frame = context.scene.frame_current - 1
+                    print("Projectile collision with object:", result[4].name, "on frame:", coll_frame)
+                    print("Intersection point:", intersection_point)
+                    data = [result, coll_frame, intersection_point, normal]
+                    
+                    break
+
+            # Increase the frame
+            context.scene.frame_set(context.scene.frame_current + 1)
+            f += 1
+
+        # Reshow objects that were hidden
+        self.ignore_objects(context, False, source)
+    
+        # Return to the original scene frame
+        context.scene.frame_set(origin_frame)
+
+        # Return details
+        return data
 
     def init_laser(self, source, context):
         location = (0, 0, 0)
 
-        emitter = source
-            
+        ## -- Muzzle Flash -- ##
+        if source.laser_tool.toggle_muzzlef is True:
+
+            if source.laser_tool.muzzlef_obj is None:
+                bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=source.laser_tool.muzzlef_scale)
+                muzzlef = context.active_object
+                muzzlef.parent = source
+
+                bpy.context.view_layer.objects.active = source
+                source.select_set(True)
+                muzzlef.select_set(False)
+
+                move_to_collection(muzzlef_collection_name, muzzlef)
+
+                source.laser_tool.muzzlef_obj = muzzlef
+
+            # Animate visibility
+            source.laser_tool.muzzlef_obj.scale = (0, 0, 0)
+            source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current - 1)
+
+            source.laser_tool.muzzlef_obj.scale = source.laser_tool.muzzlef_scale
+            source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current)
+
+            source.laser_tool.muzzlef_obj.scale = (0, 0, 0)
+            source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current + 1)
+
         bpy.ops.mesh.primitive_cylinder_add(
             radius=0.02,
             depth=3,
             location=location,
-            scale=emitter.laser_tool.laser_scale
+            scale=source.laser_tool.laser_scale
         )
 
         new_laser = bpy.context.active_object
-
-        bpy.context.view_layer.objects.active = emitter
-        emitter.select_set(True)
-        new_laser.select_set(False)
-
-        move_to_collection(laser_collection_name, new_laser)
-
-        ## Keyframing ##
-
-        cur_frame = context.scene.frame_current
-        lifetime = context.object.laser_tool.laser_lifetime
-        velocity = context.object.laser_tool.laser_velocity
-
-        new_laser.matrix_world = emitter.matrix_world
-        
-        emitter_matrix = emitter.matrix_world.copy()
+        new_laser.matrix_world = source.matrix_world
+        emitter_matrix = source.matrix_world.copy()
         emitter_matrix.invert() # inversion basically cancels out transformations applied to the object
         location, rotation, scale = emitter_matrix.decompose()
         laser_matrix = Matrix.LocRotScale(location, rotation, scale)
         rotation_vector = Vector((0,0,0)) @ laser_matrix
         new_laser.location = new_laser.location + rotation_vector
 
-        new_laser.keyframe_insert( data_path = 'location', frame = cur_frame)
-        new_laser.location = emitter.matrix_world.translation + Vector((0, 0, lifetime * velocity)) @ laser_matrix
-        new_laser.keyframe_insert( data_path = 'location', frame = cur_frame + lifetime)
+        bpy.context.view_layer.objects.active = source
+        source.select_set(True)
+        new_laser.select_set(False)
 
-        # Set initial visibility
-        new_laser.hide_viewport = True
-        new_laser.hide_render = True
-        new_laser.keyframe_insert(data_path="hide_viewport", frame=cur_frame - 1)
-        new_laser.keyframe_insert(data_path="hide_render", frame=cur_frame - 1)
+        move_to_collection(laser_collection_name, new_laser)
 
-        # Make the empty visible before it starts moving
-        new_laser.hide_viewport = False
-        new_laser.hide_render = False
-        new_laser.keyframe_insert(data_path="hide_viewport", frame=cur_frame)
-        new_laser.keyframe_insert(data_path="hide_render", frame=cur_frame)
 
-        # Set visibility to hide again after animation ends
-        new_laser.hide_viewport = True
-        new_laser.hide_render = True
-        new_laser.keyframe_insert(data_path="hide_viewport", frame=cur_frame + lifetime)
-        new_laser.keyframe_insert(data_path="hide_render", frame=cur_frame + lifetime)
+        
+
+       
+        # ## Keyframing ##
+        # lifetime = context.object.laser_tool.laser_lifetime
+        # velocity = context.object.laser_tool.laser_velocity
+        origin = new_laser.location
+        new_laser.keyframe_insert( data_path = 'location', frame = context.scene.frame_current)
+        new_laser.location = source.matrix_world.translation + Vector((0, 0, context.object.laser_tool.laser_lifetime * context.object.laser_tool.laser_velocity)) @ laser_matrix
+        new_laser.keyframe_insert( data_path = 'location', frame = context.scene.frame_current + context.object.laser_tool.laser_lifetime)
+        new_laser.location = origin
 
         #making animation linear
         fcurves = new_laser.animation_data.action.fcurves
@@ -316,153 +497,29 @@ class CreateLaser(bpy.types.Operator):
             for kf in fcurve.keyframe_points:
                 kf.interpolation = 'LINEAR'
 
-        ## -- Muzzle Flash -- ##
-        if emitter.laser_tool.toggle_muzzlef is True:
+        data = self.check_collision(source, new_laser, source.laser_tool.laser_lifetime, context)
 
-            if emitter.laser_tool.muzzlef_obj is None:
-                bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=emitter.laser_tool.muzzlef_scale)
-                muzzlef = context.active_object
-                muzzlef.parent = emitter
+        if len(data) == 0:
 
-                bpy.context.view_layer.objects.active = emitter
-                emitter.select_set(True)
-                muzzlef.select_set(False)
+            self.set_visibility(context, new_laser, context.scene.frame_current, context.scene.frame_current + source.laser_tool.laser_lifetime)
 
-                move_to_collection(muzzlef_collection_name, muzzlef)
+            return {'FINISHED'}
 
-                emitter.laser_tool.muzzlef_obj = muzzlef
+        coll_frame = data[1]
+        self.set_visibility(context, new_laser, context.scene.frame_current, coll_frame)
 
-            # Animate visibility
-            emitter.laser_tool.muzzlef_obj.scale = (0, 0, 0)
-            emitter.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=cur_frame - 1)
-
-            emitter.laser_tool.muzzlef_obj.scale = emitter.laser_tool.muzzlef_scale
-            emitter.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=cur_frame)
-
-            emitter.laser_tool.muzzlef_obj.scale = (0, 0, 0)
-            emitter.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=cur_frame + 1)
-
-        ## -- Raycasting -- ##
-
-        if context.object.laser_tool.toggle_collision is True:
-
-            ignored_objects = []
-
-            laser_collection = bpy.data.collections.get(laser_collection_name)
-            if laser_collection:
-                ignored_objects += laser_collection.objects
-            decal_collection = bpy.data.collections.get(decal_collection_name)
-            if decal_collection:
-                ignored_objects += decal_collection.objects
-
-            if emitter.laser_tool.muzzlef_obj is not None:
-                ignored_objects.append(emitter.laser_tool.muzzlef_obj)
-            
-            for source in ignored_objects:
-                source.hide_viewport = True
-
-
-            emitter_direction = Vector(emitter.matrix_world.col[2][:3])
-            collision_frame = None
-                            
-            result = bpy.context.scene.ray_cast(
-                bpy.context.window.view_layer.depsgraph,
-                emitter.matrix_world.translation,
-                emitter_direction
-                )
-
-            # In the event of a collision
-            if result[0]:
-
-                intersection_point = result[1]
-                normal = result[2]
-                print("Laser hit at:", intersection_point)
-                distance = (emitter.matrix_world.translation - result[1]).length
-                # print("Distance:", distance)
-                # print("Normal at hit point:", normal)
-
-                # print("Object hit:", result[4].name)
-
-                collision_frame = int(cur_frame + distance / velocity) + 1 # the +1 is so the laser fully overlaps with the obj
-                # print("Frame of Impact:", collision_frame)
-
-                # 'Destroy' the laser
-                new_laser.hide_viewport = True
-                new_laser.hide_render = True
-                new_laser.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
-                new_laser.keyframe_insert(data_path="hide_render", frame=collision_frame)
-
-                ## -- Create laser impact marker -- ##
-                if context.object.laser_tool.toggle_decals is True:
-
-
-
-                    bpy.ops.mesh.primitive_grid_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=context.object.laser_tool.decal_scale)
-                    marker = context.active_object
-
-                    # Align to surface
-                    face_normal = Vector(result[2])
-                                
-                    z = Vector(marker.matrix_world.col[2][:3])
-                    axis = z.cross(face_normal)
-                    angle_cos = z.dot(face_normal)
-                    angle_cos = max(min(angle_cos, 1.0), -1.0)
-                    angle = math.acos(angle_cos)
-                    m = Matrix.Rotation(angle, 4, axis)
-                    marker.matrix_world = m @ marker.matrix_world
-                    vec = Vector((0.0, 0.0, round(random.uniform(0.003, 0.006), 10)))
-                    inv = marker.matrix_world.copy()
-                    inv.invert()
-                    vec_rot = vec @ inv
-                    marker.location = result[1] + vec_rot
-
-                    print(marker.location)
-
-                    bpy.context.view_layer.objects.active = emitter
-                    emitter.select_set(True)
-                    marker.select_set(False)
-
-                    move_to_collection(decal_collection_name, marker)
-
-                    # Animate visibility
-                    marker.hide_viewport = True
-                    marker.hide_render = True
-                    marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame - 1)
-                    marker.keyframe_insert(data_path="hide_render", frame=collision_frame - 1)
-
-                    marker.hide_viewport = False
-                    marker.hide_render = False
-                    marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
-                    marker.keyframe_insert(data_path="hide_render", frame=collision_frame)
-
-                    new_item = context.object.laser_tool.impact_decals.add()
-                    new_item.impact_decal = marker
-
-                    # Potentially disable for performance gains if it ends up being unnecessary 
-                    shrinkwrap_modifier = marker.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
-                    shrinkwrap_modifier.target = result[4]
-                    shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
-                    shrinkwrap_modifier.offset = 0.01
-
-                    # Create a Child Of constraint
-                    child_of_constraint = marker.constraints.new(type='CHILD_OF')
-
-                    # Set the target to result[4] (assuming result[4] is a valid object)
-                    child_of_constraint.target = result[4]
-
-                    # Enable the constraint
-                    child_of_constraint.mute = False
-
-
-
-            for source in ignored_objects:
-                source.hide_viewport = False
+        ## -- Create laser impact marker -- ##
+        hit_info = data[0]
+        if hit_info[0] is True:
+            if source.laser_tool.toggle_decals is True:
+                self.create_decal(context, source, data[0], data[1])
+                  
 
         ## -- Save laser to emitter -- ##
-        new_item = context.object.laser_tool.instantiated_lasers.add()
+        new_item = source.laser_tool.instantiated_lasers.add()
         new_item.instantiated_laser = new_laser
 
-        new_frame = context.object.laser_tool.laser_frames.add()
+        new_frame = source.laser_tool.laser_frames.add()
         new_frame.laser_frame = bpy.context.scene.frame_current
 
         self.report({'INFO'}, "Laser created.")
