@@ -168,7 +168,7 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     muzzlef_scale: bpy.props.FloatVectorProperty(
         name = "Muzzle Flash Scale",
         description = "Peak size of the muzzle flash (if enabled).",
-        default = (0.5, 0.5, 0.5)
+        default = (1, 1, 1)
     )
 
     laser_obj: bpy.props.PointerProperty(
