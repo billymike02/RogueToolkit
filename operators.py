@@ -1,12 +1,20 @@
 import bpy
 import math
 import random
+import os
 from mathutils import Vector, Matrix
 
 # Hard-coded names
 laser_collection_name = 'RogueToolkit_Lasers'
 decal_collection_name = 'RogueToolkit_Decals'
 muzzlef_collection_name = 'RogueToolkit_MuzzleFlash'
+
+# Get a relative filepath
+addon_dir = os.path.dirname(os.path.abspath(__file__))
+blend_file_name = "objects.blend"
+blend_file_path = os.path.join(addon_dir, blend_file_name)
+
+print("Directory:", blend_file_path)
 
 class AttachToPath(bpy.types.Operator):
     
@@ -245,7 +253,10 @@ def move_to_collection(name: str, obj) -> None:
         bpy.context.scene.collection.children.link(target_collection)
 
     target_collection.objects.link(obj)
-    active_collection.objects.unlink(obj)
+
+    if obj.name in active_collection.objects:
+        print('ting found')
+        active_collection.objects.unlink(obj)
 
 class CreateLaser(bpy.types.Operator):
     bl_idname = "object.create_laser"
@@ -305,8 +316,20 @@ class CreateLaser(bpy.types.Operator):
         origin_frame = context.scene.frame_current
 
         # Create decal mesh
-        bpy.ops.mesh.primitive_grid_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=context.object.laser_tool.decal_scale)
-        decal = context.active_object
+        decal = None
+
+        with bpy.data.libraries.load(blend_file_path) as (data_from, data_to):
+            data_to.collections = ["decals"]
+
+        for collection in data_to.collections:
+            for obj in collection.objects:
+                move_to_collection(decal_collection_name, obj)
+                decal = obj
+                break
+
+        if decal is None:
+            print("Decal is invalid!")
+            return {'CANCELLED'}
 
         # Align to surface
         face_normal = Vector(rc_result[2])
@@ -324,15 +347,9 @@ class CreateLaser(bpy.types.Operator):
         vec_rot = vec @ inv
         decal.location = rc_result[1] + vec_rot
 
-        bpy.context.view_layer.objects.active = source
-        source.select_set(True)
-        decal.select_set(False)
+        decal.scale = source.laser_tool.decal_scale
 
-        move_to_collection(decal_collection_name, decal)
-
-        self.set_visibility(context, obj=decal, fshow=collision_frame)
-
-        new_item = context.object.laser_tool.impact_decals.add()
+        new_item = source.laser_tool.impact_decals.add()
         new_item.impact_decal = decal
 
         context.scene.frame_set(collision_frame)
@@ -346,7 +363,18 @@ class CreateLaser(bpy.types.Operator):
         shrinkwrap_modifier = decal.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
         shrinkwrap_modifier.target = rc_result[4]
         shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
-        shrinkwrap_modifier.offset = 0.0
+        shrinkwrap_modifier.offset = 0.005
+        bpy.context.view_layer.objects.active = decal
+        decal.select_set(True)
+        bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
+
+        print("shouldve applied modifier")
+
+        bpy.context.view_layer.objects.active = source
+        source.select_set(True)
+        decal.select_set(False)
+
+        self.set_visibility(context, obj=decal, fshow=collision_frame)
 
         context.scene.frame_set(origin_frame)
 
