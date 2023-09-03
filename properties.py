@@ -84,7 +84,10 @@ class ImpactDecalPointer(bpy.types.PropertyGroup):
     impact_decal: bpy.props.PointerProperty(type=bpy.types.Object)
 
 class LinkedEmitterPointer(bpy.types.PropertyGroup):
-    linked_emitter: bpy.props.PointerProperty(type=bpy.types.Object)
+
+    linked_emitter: bpy.props.PointerProperty(
+        type=bpy.types.Object
+    )
 
 class LaserFrame(bpy.types.PropertyGroup):
     laser_frame: bpy.props.IntProperty(

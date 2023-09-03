@@ -250,9 +250,12 @@ def move_to_collection(name: str, obj) -> None:
 class CreateLaser(bpy.types.Operator):
     bl_idname = "object.create_laser"
     bl_label = "Create Laser"
-    bl_description = "Lasers!!!"
+    bl_description = "Instantiate a new laser projectile from this emitter."
 
-    def set_visibility(self, context, obj, fshow, fhide):
+    def set_visibility(self, context, obj, fshow, fhide=None):
+
+        origin_frame = context.scene.frame_current
+
         # Set initial visibility
         obj.hide_viewport = True
         obj.hide_render = True
@@ -265,17 +268,20 @@ class CreateLaser(bpy.types.Operator):
         obj.keyframe_insert(data_path="hide_viewport", frame=fshow)
         obj.keyframe_insert(data_path="hide_render", frame=fshow)
 
-        # Set visibility to hide again after animation ends
-        obj.hide_viewport = True
-        obj.hide_render = True
-        obj.keyframe_insert(data_path="hide_viewport", frame=fhide)
-        obj.keyframe_insert(data_path="hide_render", frame=fhide)
+        if fhide:
+            # Set visibility to hide again after animation ends
+            obj.hide_viewport = True
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_viewport", frame=fhide)
+            obj.keyframe_insert(data_path="hide_render", frame=fhide)
 
         #making animation linear
         fcurves = obj.animation_data.action.fcurves
         for fcurve in fcurves:
             for kf in fcurve.keyframe_points:
                 kf.interpolation = 'LINEAR'
+
+        context.scene.frame_set(origin_frame)
 
     def ignore_objects(self, context, setting: bool, emitter):
 
@@ -298,62 +304,49 @@ class CreateLaser(bpy.types.Operator):
 
         origin_frame = context.scene.frame_current
 
+        # Create decal mesh
         bpy.ops.mesh.primitive_grid_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=context.object.laser_tool.decal_scale)
-        marker = context.active_object
+        decal = context.active_object
 
         # Align to surface
         face_normal = Vector(rc_result[2])
                     
-        z = Vector(marker.matrix_world.col[2][:3])
+        z = Vector(decal.matrix_world.col[2][:3])
         axis = z.cross(face_normal)
         angle_cos = z.dot(face_normal)
         angle_cos = max(min(angle_cos, 1.0), -1.0)
         angle = math.acos(angle_cos)
         m = Matrix.Rotation(angle, 4, axis)
-        marker.matrix_world = m @ marker.matrix_world
+        decal.matrix_world = m @ decal.matrix_world
         vec = Vector((0.0, 0.0, round(random.uniform(0.003, 0.006), 10)))
-        inv = marker.matrix_world.copy()
+        inv = decal.matrix_world.copy()
         inv.invert()
         vec_rot = vec @ inv
-        marker.location = rc_result[1] + vec_rot
-
-        print("Marker location:", marker.location)
+        decal.location = rc_result[1] + vec_rot
 
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
-        marker.select_set(False)
+        decal.select_set(False)
 
-        move_to_collection(decal_collection_name, marker)
+        move_to_collection(decal_collection_name, decal)
 
-        # Animate visibility
-        marker.hide_viewport = True
-        marker.hide_render = True
-        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame - 1)
-        marker.keyframe_insert(data_path="hide_render", frame=collision_frame - 1)
-
-        marker.hide_viewport = False
-        marker.hide_render = False
-        marker.keyframe_insert(data_path="hide_viewport", frame=collision_frame)
-        marker.keyframe_insert(data_path="hide_render", frame=collision_frame)
+        self.set_visibility(context, obj=decal, fshow=collision_frame)
 
         new_item = context.object.laser_tool.impact_decals.add()
-        new_item.impact_decal = marker
+        new_item.impact_decal = decal
 
         context.scene.frame_set(collision_frame)
 
+        # Create a Child Of constraint
+        child_of_constraint = decal.constraints.new(type='CHILD_OF')
+        child_of_constraint.target = rc_result[4]
+        child_of_constraint.mute = False
+
         # Potentially disable for performance gains if it ends up being unnecessary 
-        shrinkwrap_modifier = marker.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
+        shrinkwrap_modifier = decal.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
         shrinkwrap_modifier.target = rc_result[4]
         shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
-        shrinkwrap_modifier.offset = 0.01
-
-        # Create a Child Of constraint
-        child_of_constraint = marker.constraints.new(type='CHILD_OF')
-        # Set the target to result[4] (assuming result[4] is a valid object)
-        child_of_constraint.target = rc_result[4]
-
-        # Enable the constraint
-        child_of_constraint.mute = False
+        shrinkwrap_modifier.offset = 0.0
 
         context.scene.frame_set(origin_frame)
 
@@ -369,7 +362,6 @@ class CreateLaser(bpy.types.Operator):
         endf = startf + lifetime
 
         while context.scene.frame_current <= endf:
-
             locs.append(projectile.location.copy())
 
             # Increase the frame
@@ -385,17 +377,12 @@ class CreateLaser(bpy.types.Operator):
         endf = startf + lifetime
         f = 0
         min_dist = None
-
-        data = []
+        data = None
 
         while context.scene.frame_current <= endf:
-
             source_dir = Vector(source.matrix_world.col[2][:3])
             result = bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph,source.matrix_world.translation,source_dir)
             
-            # velocity = source.laser_tool.laser_velocity
-    
-
             if result[0]:
                 intersection_point = result[1]
                 normal = result[2]
@@ -408,10 +395,7 @@ class CreateLaser(bpy.types.Operator):
                     min_dist = distance 
                 elif distance > min_dist:
                     coll_frame = context.scene.frame_current - 1
-                    print("Projectile collision with object:", result[4].name, "on frame:", coll_frame)
-                    print("Intersection point:", intersection_point)
                     data = [result, coll_frame, intersection_point, normal]
-                    
                     break
 
             # Increase the frame
@@ -427,10 +411,12 @@ class CreateLaser(bpy.types.Operator):
         # Return details
         return data
 
+    # Responsible for creation of each individual laser
     def init_laser(self, source, context):
+        origin_frame = context.scene.frame_current
         location = (0, 0, 0)
 
-        ## -- Muzzle Flash -- ##
+        # Muzzle flash
         if source.laser_tool.toggle_muzzlef is True:
 
             if source.laser_tool.muzzlef_obj is None:
@@ -456,6 +442,7 @@ class CreateLaser(bpy.types.Operator):
             source.laser_tool.muzzlef_obj.scale = (0, 0, 0)
             source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current + 1)
 
+        # Create laser mesh
         bpy.ops.mesh.primitive_cylinder_add(
             radius=0.02,
             depth=3,
@@ -463,6 +450,7 @@ class CreateLaser(bpy.types.Operator):
             scale=source.laser_tool.laser_scale
         )
 
+        # Confusing calculations to determine how to orient laser to proper axes
         new_laser = bpy.context.active_object
         new_laser.matrix_world = source.matrix_world
         emitter_matrix = source.matrix_world.copy()
@@ -478,49 +466,41 @@ class CreateLaser(bpy.types.Operator):
 
         move_to_collection(laser_collection_name, new_laser)
 
-
-        
-
-       
-        # ## Keyframing ##
-        # lifetime = context.object.laser_tool.laser_lifetime
-        # velocity = context.object.laser_tool.laser_velocity
+        # Animate movement of laser
         origin = new_laser.location
         new_laser.keyframe_insert( data_path = 'location', frame = context.scene.frame_current)
         new_laser.location = source.matrix_world.translation + Vector((0, 0, context.object.laser_tool.laser_lifetime * context.object.laser_tool.laser_velocity)) @ laser_matrix
         new_laser.keyframe_insert( data_path = 'location', frame = context.scene.frame_current + context.object.laser_tool.laser_lifetime)
         new_laser.location = origin
 
-        #making animation linear
+        # Make animation linear
         fcurves = new_laser.animation_data.action.fcurves
         for fcurve in fcurves:
             for kf in fcurve.keyframe_points:
                 kf.interpolation = 'LINEAR'
 
+        # Check for collisions of lasers
         data = self.check_collision(source, new_laser, source.laser_tool.laser_lifetime, context)
 
-        if len(data) == 0:
-
+        if data is None: # if there is no collision
             self.set_visibility(context, new_laser, context.scene.frame_current, context.scene.frame_current + source.laser_tool.laser_lifetime)
-
-            return {'FINISHED'}
-
-        coll_frame = data[1]
-        self.set_visibility(context, new_laser, context.scene.frame_current, coll_frame)
-
-        ## -- Create laser impact marker -- ##
-        hit_info = data[0]
-        if hit_info[0] is True:
+        else: # if there is a collision
+            self.set_visibility(context, new_laser, context.scene.frame_current, data[1])
+                        
+            # Decal handling
             if source.laser_tool.toggle_decals is True:
-                self.create_decal(context, source, data[0], data[1])
-                  
+                hit_info = data[0]
+                if hit_info[0] is True:
+                    self.create_decal(context, source, data[0], data[1])
 
-        ## -- Save laser to emitter -- ##
+        # Save laser and frame to source
         new_item = source.laser_tool.instantiated_lasers.add()
         new_item.instantiated_laser = new_laser
 
         new_frame = source.laser_tool.laser_frames.add()
         new_frame.laser_frame = bpy.context.scene.frame_current
+
+        context.scene.frame_set(origin_frame)
 
         self.report({'INFO'}, "Laser created.")
         return {'FINISHED'}
@@ -582,7 +562,7 @@ class CreateLaserEmitter(bpy.types.Operator):
 class CreateLinkedEmitter(bpy.types.Operator):
     bl_idname = "object.create_linked_emitter"
     bl_label = "Create Linked Emitter"
-    bl_description = "TODO"
+    bl_description = "Add an emitter with linked settings to the selected emitter that will create lasers in unison."
 
     def execute(self, context):
 
@@ -633,11 +613,6 @@ class RecalculateLasers(bpy.types.Operator):
 
         self.recalculate_emitter_lasers(selected_emitter, context)
 
-        # for child in selected_emitter.laser_tool.linked_emitters:
-        #     linked_emitter = child.linked_emitter
-
-        #     self.recalculate_emitter_lasers(linked_emitter, context)
-
         bpy.context.scene.frame_set(curr_frame)
         return {'FINISHED'}
 
@@ -660,7 +635,6 @@ class DeleteAllLasers(bpy.types.Operator):
         emitter_properties.instantiated_lasers.clear()
         emitter_properties.impact_decals.clear()
         emitter_properties.laser_frames.clear()
-
 
         # Delete the objects from the scene
         for obj in objects_to_delete:
