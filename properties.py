@@ -180,8 +180,8 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     laser_velocity: bpy.props.FloatProperty(
         name = "Laser Velocity",
         description = "Velocity of lasers created by emitter.",
-        default = 5.0,
-        min = 1.0,
+        default = 10.0,
+        min = 0.1,
         update=update_callback
     )
 
@@ -231,7 +231,7 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     decal_scale: bpy.props.FloatVectorProperty(
         name = "Decal Scale",
         description = "Size that decals will be made.",
-        default = (0.1, 0.1, 0.1)
+        default = (1, 1, 1)
     )
 
     tracked_obj: bpy.props.PointerProperty(

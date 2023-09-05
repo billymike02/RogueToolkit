@@ -8,6 +8,7 @@ from mathutils import Vector, Matrix
 laser_collection_name = 'RogueToolkit_Lasers'
 decal_collection_name = 'RogueToolkit_Decals'
 muzzlef_collection_name = 'RogueToolkit_MuzzleFlash'
+linkedobjs_collection_name = 'RogueToolkit_LinkedObjects'
 
 # Get a relative filepath
 addon_dir = os.path.dirname(os.path.abspath(__file__))
@@ -255,7 +256,6 @@ def move_to_collection(name: str, obj) -> None:
     target_collection.objects.link(obj)
 
     if obj.name in active_collection.objects:
-        print('ting found')
         active_collection.objects.unlink(obj)
 
 class CreateLaser(bpy.types.Operator):
@@ -311,6 +311,7 @@ class CreateLaser(bpy.types.Operator):
         for source in ignored_objects:
             source.hide_viewport = setting
 
+
     def create_decal(self, context, source, rc_result, collision_frame):
 
         origin_frame = context.scene.frame_current
@@ -330,8 +331,6 @@ class CreateLaser(bpy.types.Operator):
                 decal.select_set(True)
 
                 mat_name = obj.name.split(".")[0]
-
-                print("matname:", mat_name)
 
                 if bpy.data.materials.get(mat_name) and obj.material_slots[0].material != bpy.data.materials.get(mat_name):
                     bpy.data.materials.remove(obj.material_slots[0].material)
@@ -387,8 +386,6 @@ class CreateLaser(bpy.types.Operator):
         decal.select_set(True)
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
-        print("shouldve applied modifier")
-
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
         decal.select_set(False)
@@ -409,6 +406,7 @@ class CreateLaser(bpy.types.Operator):
         endf = startf + lifetime
 
         while context.scene.frame_current <= endf:
+            projectile.hide_viewport = False
             locs.append(projectile.location.copy())
 
             # Increase the frame
@@ -427,14 +425,20 @@ class CreateLaser(bpy.types.Operator):
         data = None
 
         while context.scene.frame_current <= endf:
+            self.ignore_objects(context, True, source)
             source_dir = Vector(source.matrix_world.col[2][:3])
             result = bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph,source.matrix_world.translation,source_dir)
             
             if result[0]:
+
+                
+                # print("Ray hit something:", result[4].name, "at frame:", context.scene.frame_current - 1)
                 intersection_point = result[1]
                 normal = result[2]
                 distance = (locs[f] - intersection_point).length
                 coll_frame = None
+
+                # print("Ray hit something:", result[4].name, "at frame:", context.scene.frame_current - 1, "and distance:", distance)
 
                 if min_dist is None:
                     min_dist = distance
@@ -442,6 +446,7 @@ class CreateLaser(bpy.types.Operator):
                     min_dist = distance 
                 elif distance > min_dist:
                     coll_frame = context.scene.frame_current - 1
+                    # print("Obj:", projectile.name, "hit something:", result[4].name, "at frame:", coll_frame)
                     data = [result, coll_frame, intersection_point, normal]
                     break
 
@@ -467,8 +472,27 @@ class CreateLaser(bpy.types.Operator):
         if source.laser_tool.toggle_muzzlef is True:
 
             if source.laser_tool.muzzlef_obj is None:
-                bpy.ops.mesh.primitive_uv_sphere_add(radius=1, enter_editmode=False, align='WORLD', location=(0, 0, 0), scale=source.laser_tool.muzzlef_scale)
-                muzzlef = context.active_object
+
+                 # Create laser mesh
+                muzzlef = None
+
+                try:
+                    template_muzzlef = bpy.data.objects["MuzzleFlash"]
+                except:
+                    with bpy.data.libraries.load(blend_file_path, link=True) as (data_from, data_to):
+                        data_to.collections = ["muzzlef"]
+
+                    for collection in data_to.collections:
+                        for obj in collection.objects:
+                            move_to_collection(linkedobjs_collection_name, obj)
+                            template_muzzlef = obj
+
+                            bpy.context.view_layer.objects.active = muzzlef
+                            template_muzzlef.select_set(False)
+
+                            break
+
+                muzzlef = template_muzzlef.copy()
                 muzzlef.parent = source
 
                 bpy.context.view_layer.objects.active = source
@@ -490,15 +514,43 @@ class CreateLaser(bpy.types.Operator):
             source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current + 1)
 
         # Create laser mesh
-        bpy.ops.mesh.primitive_cylinder_add(
-            radius=0.02,
-            depth=3,
-            location=location,
-            scale=source.laser_tool.laser_scale
-        )
+        new_laser = None
+
+        try:
+            template_laser = bpy.data.objects["Laser"]
+        except:
+
+            with bpy.data.libraries.load(blend_file_path, link=True) as (data_from, data_to):
+                data_to.collections = ["lasers"]
+
+            for collection in data_to.collections:
+                for obj in collection.objects:
+                    move_to_collection(linkedobjs_collection_name, obj)
+                    template_laser = obj
+
+                    bpy.context.view_layer.objects.active = new_laser
+                    template_laser.select_set(False)
+
+                    break
+
+
+            for view_layer in context.scene.view_layers:
+                view_layer.layer_collection.children[linkedobjs_collection_name].exclude = True  
+        
+
+        new_laser = template_laser.copy()
+        new_laser.animation_data_create()
+
+        # Create a unique action for each new_laser object
+        new_laser.animation_data.action = bpy.data.actions.new(name=f"LaserAction_{new_laser.name}")
+
+        move_to_collection(laser_collection_name, new_laser)
+
+        bpy.context.view_layer.objects.active = new_laser
+        source.select_set(False)
+        new_laser.select_set(True)
 
         # Confusing calculations to determine how to orient laser to proper axes
-        new_laser = bpy.context.active_object
         new_laser.matrix_world = source.matrix_world
         emitter_matrix = source.matrix_world.copy()
         emitter_matrix.invert() # inversion basically cancels out transformations applied to the object
@@ -507,11 +559,11 @@ class CreateLaser(bpy.types.Operator):
         rotation_vector = Vector((0,0,0)) @ laser_matrix
         new_laser.location = new_laser.location + rotation_vector
 
+        new_laser.scale = source.laser_tool.laser_scale
+
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
         new_laser.select_set(False)
-
-        move_to_collection(laser_collection_name, new_laser)
 
         # Animate movement of laser
         origin = new_laser.location
@@ -553,6 +605,12 @@ class CreateLaser(bpy.types.Operator):
         return {'FINISHED'}
 
     def execute(self, context):
+
+        if bpy.context.object is None:
+            return {'CANCELLED'}
+
+        if bpy.context.object.laser_tool.valid_emitter is False:
+            return {'CANCELLED'}
 
         if bpy.context.object.laser_tool.child_emitter is True:
             return {'CANCELLED'}
