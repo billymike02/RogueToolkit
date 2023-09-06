@@ -133,6 +133,8 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
                 o.decal_scale = self.decal_scale
             if o.tracked_obj != self.tracked_obj:
                 o.tracked_obj = self.tracked_obj
+            if o.laser_color != self.laser_color:
+                o.laser_color = self.laser_color
             if o.toggle_targeter != self.toggle_targeter:
                 o.toggle_targeter = self.toggle_targeter
 
@@ -151,6 +153,8 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
                 self.muzzlef_obj.color = (0, 1, 0, 1)
             else:
                 self.muzzlef_obj.color = (1, 1, 1, 1)
+
+        self.update_callback(context)
 
     instantiated_lasers: bpy.props.CollectionProperty(type=LaserPointer)
 
@@ -194,7 +198,7 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     laser_velocity: bpy.props.FloatProperty(
         name = "Laser Velocity",
         description = "Velocity of lasers created by emitter.",
-        default = 10.0,
+        default = 1.0,
         min = 0.1,
         update=update_callback
     )

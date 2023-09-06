@@ -506,6 +506,9 @@ class CreateLaser(bpy.types.Operator):
 
                 self.apply_color_to_obj(context, source, muzzlef)
 
+                muzzlef.animation_data_create()
+                muzzlef.animation_data.action = bpy.data.actions.new(name=f"MuzzleAction_{muzzlef.name}")
+
                 bpy.context.view_layer.objects.active = source
                 source.select_set(True)
                 muzzlef.select_set(False)
