@@ -66,6 +66,8 @@ class LaserCreator(bpy.types.Panel):
             row.label(text="Parent Emitter: " + context.object.laser_tool.parent_emitter.name)
         else:
             row = layout.row()
+            row.prop(laser_tool, "laser_color")
+            row = layout.row()
             row.prop(laser_tool, "toggle_targeter")
             row = layout.row()
             row.prop(laser_tool, "laser_lifetime")

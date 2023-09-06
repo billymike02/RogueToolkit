@@ -91,7 +91,7 @@ class LinkedEmitterPointer(bpy.types.PropertyGroup):
 
 class LaserFrame(bpy.types.PropertyGroup):
     laser_frame: bpy.props.IntProperty(
-        name="Heyyyryryr"
+        name="Laser Frame"
     )
 
 class LaserEmitterProperties(bpy.types.PropertyGroup):
@@ -137,6 +137,20 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
                 o.toggle_targeter = self.toggle_targeter
 
         # print(self,"has updated its settings.")
+
+    def update_color(self, context):
+
+        print("attemping update muzzlef color")
+
+        if self.muzzlef_obj:
+            if self.laser_color == "Red":
+                self.muzzlef_obj.color = (1.0, 0, 0, 1.0)
+            elif self.laser_color == "Blue":
+                self.muzzlef_obj.color = (0, 0, 1.0, 1.0)
+            elif self.laser_color == "Green":
+                self.muzzlef_obj.color = (0, 1, 0, 1)
+            else:
+                self.muzzlef_obj.color = (1, 1, 1, 1)
 
     instantiated_lasers: bpy.props.CollectionProperty(type=LaserPointer)
 
@@ -245,6 +259,19 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         name = "Toggle Targeter",        
         description = "Set whetherl or not a visual assist will be drawn to help in aiming the emitter.",
         default = False
+    )
+
+    laser_color: bpy.props.EnumProperty(
+        items=(
+            ("Red", "Red", "Red Laser Color"),
+            ("Green", "Green", "Green Laser Color"),
+            ("Blue", "Blue", "Blue Laser Color"),
+            ("Custom", "Custom", "Custom Laser Color"),
+        ),
+        name="Color",
+        default="Red",
+        description="Select color of the laser and it's muzzle flash.",
+        update=update_color
     )
 
 class SceneProperties(bpy.types.PropertyGroup):

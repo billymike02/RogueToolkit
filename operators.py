@@ -311,7 +311,6 @@ class CreateLaser(bpy.types.Operator):
         for source in ignored_objects:
             source.hide_viewport = setting
 
-
     def create_decal(self, context, source, rc_result, collision_frame):
 
         origin_frame = context.scene.frame_current
@@ -463,6 +462,16 @@ class CreateLaser(bpy.types.Operator):
         # Return details
         return data
 
+    def apply_color_to_obj(self, context, source, obj):
+        if source.laser_tool.laser_color == "Red":
+            obj.color = (1.0, 0, 0, 1.0)
+        elif source.laser_tool.laser_color == "Blue":
+            obj.color = (0, 0, 1.0, 1.0)
+        elif source.laser_tool.laser_color == "Green":
+            obj.color = (0, 1, 0, 1)
+        else:
+            obj.color = (1, 1, 1, 1)
+    
     # Responsible for creation of each individual laser
     def init_laser(self, source, context):
         origin_frame = context.scene.frame_current
@@ -494,6 +503,8 @@ class CreateLaser(bpy.types.Operator):
 
                 muzzlef = template_muzzlef.copy()
                 muzzlef.parent = source
+
+                self.apply_color_to_obj(context, source, muzzlef)
 
                 bpy.context.view_layer.objects.active = source
                 source.select_set(True)
@@ -540,6 +551,10 @@ class CreateLaser(bpy.types.Operator):
 
         new_laser = template_laser.copy()
         new_laser.animation_data_create()
+
+        self.apply_color_to_obj(context, source, new_laser)
+
+        print(new_laser.color)
 
         # Create a unique action for each new_laser object
         new_laser.animation_data.action = bpy.data.actions.new(name=f"LaserAction_{new_laser.name}")
