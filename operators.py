@@ -469,8 +469,8 @@ class CreateLaser(bpy.types.Operator):
             obj.color = (0, 0, 1.0, 1.0)
         elif source.laser_tool.laser_color == "Green":
             obj.color = (0, 1, 0, 1)
-        else:
-            obj.color = (1, 1, 1, 1)
+        elif source.laser_tool.laser_color == "Custom":
+            obj.color = source.laser_tool.custom_color
     
     # Responsible for creation of each individual laser
     def init_laser(self, source, context):
@@ -700,6 +700,36 @@ class CreateLinkedEmitter(bpy.types.Operator):
         added_emitter.linked_emitter = new_emitter
 
         added_emitter.linked_emitter.laser_tool.parent_emitter = main_emitter
+       
+        # Synchronize all settings that you want to copy from parent to linked here.
+        if new_emitter.laser_tool.toggle_collision != main_emitter.laser_tool.toggle_collision:
+            new_emitter.laser_tool.toggle_collision = main_emitter.laser_tool.toggle_collision
+        if new_emitter.laser_tool.laser_scale != main_emitter.laser_tool.laser_scale:
+            new_emitter.laser_tool.laser_scale = main_emitter.laser_tool.laser_scale
+        if new_emitter.laser_tool.muzzlef_scale != main_emitter.laser_tool.muzzlef_scale:
+            new_emitter.laser_tool.muzzlef_scale = main_emitter.laser_tool.muzzlef_scale
+        if new_emitter.laser_tool.laser_obj != main_emitter.laser_tool.laser_obj:
+            new_emitter.laser_tool.laser_obj = main_emitter.laser_tool.laser_obj
+        if new_emitter.laser_tool.laser_velocity != main_emitter.laser_tool.laser_velocity:
+            new_emitter.laser_tool.laser_velocity = main_emitter.laser_tool.laser_velocity
+        if new_emitter.laser_tool.laser_lifetime != main_emitter.laser_tool.laser_lifetime:
+            new_emitter.laser_tool.laser_lifetime = main_emitter.laser_tool.laser_lifetime
+        if new_emitter.laser_tool.toggle_muzzlef != main_emitter.laser_tool.toggle_muzzlef:
+            new_emitter.laser_tool.toggle_muzzlef = main_emitter.laser_tool.toggle_muzzlef
+        if new_emitter.laser_tool.toggle_sparks != main_emitter.laser_tool.toggle_sparks:
+            new_emitter.laser_tool.toggle_sparks = main_emitter.laser_tool.toggle_sparks
+        if new_emitter.laser_tool.toggle_decals != main_emitter.laser_tool.toggle_decals:
+            new_emitter.laser_tool.toggle_decals = main_emitter.laser_tool.toggle_decals
+        if new_emitter.laser_tool.decal_scale != main_emitter.laser_tool.decal_scale:
+            new_emitter.laser_tool.decal_scale = main_emitter.laser_tool.decal_scale
+        if new_emitter.laser_tool.tracked_obj != main_emitter.laser_tool.tracked_obj:
+            new_emitter.laser_tool.tracked_obj = main_emitter.laser_tool.tracked_obj
+        if new_emitter.laser_tool.laser_color != main_emitter.laser_tool.laser_color:
+            new_emitter.laser_tool.laser_color = main_emitter.laser_tool.laser_color
+        if new_emitter.laser_tool.toggle_targeter != main_emitter.laser_tool.toggle_targeter:
+            new_emitter.laser_tool.toggle_targeter = main_emitter.laser_tool.toggle_targeter
+        if new_emitter.laser_tool.custom_color != main_emitter.laser_tool.custom_color:
+            new_emitter.laser_tool.custom_color = main_emitter.laser_tool.custom_color
 
         bpy.context.view_layer.objects.active = main_emitter
         main_emitter.select_set(True)

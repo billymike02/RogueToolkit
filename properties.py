@@ -106,37 +106,37 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
 
         for child_sh in self.linked_emitters:
             linked_emitter = child_sh.linked_emitter
-            o = linked_emitter.laser_tool
+            new_emitter.laser_tool = linked_emitter.laser_tool
 
             # Synchronize all settings that you want to copy from parent to linked here.
-            if o.toggle_collision != self.toggle_collision:
-                o.toggle_collision = self.toggle_collision
-            if o.laser_scale != self.laser_scale:
-                o.laser_scale = self.laser_scale
-            # if o.muzzlef_obj != self.muzzlef_obj:
-            #     o.muzzlef_obj = self.muzzlef_obj
-            if o.muzzlef_scale != self.muzzlef_scale:
-                o.muzzlef_scale = self.muzzlef_scale
-            if o.laser_obj != self.laser_obj:
-                o.laser_obj = self.laser_obj
-            if o.laser_velocity != self.laser_velocity:
-                o.laser_velocity = self.laser_velocity
-            if o.laser_lifetime != self.laser_lifetime:
-                o.laser_lifetime = self.laser_lifetime
-            if o.toggle_muzzlef != self.toggle_muzzlef:
-                o.toggle_muzzlef = self.toggle_muzzlef
-            if o.toggle_sparks != self.toggle_sparks:
-                o.toggle_sparks = self.toggle_sparks
-            if o.toggle_decals != self.toggle_decals:
-                o.toggle_decals = self.toggle_decals
-            if o.decal_scale != self.decal_scale:
-                o.decal_scale = self.decal_scale
-            if o.tracked_obj != self.tracked_obj:
-                o.tracked_obj = self.tracked_obj
-            if o.laser_color != self.laser_color:
-                o.laser_color = self.laser_color
-            if o.toggle_targeter != self.toggle_targeter:
-                o.toggle_targeter = self.toggle_targeter
+            if new_emitter.laser_tool.toggle_collision != self.toggle_collision:
+                new_emitter.laser_tool.toggle_collision = self.toggle_collision
+            if new_emitter.laser_tool.laser_scale != self.laser_scale:
+                new_emitter.laser_tool.laser_scale = self.laser_scale
+            if new_emitter.laser_tool.muzzlef_scale != self.muzzlef_scale:
+                new_emitter.laser_tool.muzzlef_scale = self.muzzlef_scale
+            if new_emitter.laser_tool.laser_obj != self.laser_obj:
+                new_emitter.laser_tool.laser_obj = self.laser_obj
+            if new_emitter.laser_tool.laser_velocity != self.laser_velocity:
+                new_emitter.laser_tool.laser_velocity = self.laser_velocity
+            if new_emitter.laser_tool.laser_lifetime != self.laser_lifetime:
+                new_emitter.laser_tool.laser_lifetime = self.laser_lifetime
+            if new_emitter.laser_tool.toggle_muzzlef != self.toggle_muzzlef:
+                new_emitter.laser_tool.toggle_muzzlef = self.toggle_muzzlef
+            if new_emitter.laser_tool.toggle_sparks != self.toggle_sparks:
+                new_emitter.laser_tool.toggle_sparks = self.toggle_sparks
+            if new_emitter.laser_tool.toggle_decals != self.toggle_decals:
+                new_emitter.laser_tool.toggle_decals = self.toggle_decals
+            if new_emitter.laser_tool.decal_scale != self.decal_scale:
+                new_emitter.laser_tool.decal_scale = self.decal_scale
+            if new_emitter.laser_tool.tracked_obj != self.tracked_obj:
+                new_emitter.laser_tool.tracked_obj = self.tracked_obj
+            if new_emitter.laser_tool.laser_color != self.laser_color:
+                new_emitter.laser_tool.laser_color = self.laser_color
+            if new_emitter.laser_tool.toggle_targeter != self.toggle_targeter:
+                new_emitter.laser_tool.toggle_targeter = self.toggle_targeter
+            if new_emitter.laser_tool.custom_color != self.custom_color:
+                new_emitter.laser_tool.custom_color = self.custom_color
 
         # print(self,"has updated its settings.")
 
@@ -151,8 +151,8 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
                 self.muzzlef_obj.color = (0, 0, 1.0, 1.0)
             elif self.laser_color == "Green":
                 self.muzzlef_obj.color = (0, 1, 0, 1)
-            else:
-                self.muzzlef_obj.color = (1, 1, 1, 1)
+            elif self.laser_color == "Custom":
+                self.muzzlef_obj.color = self.custom_color
 
         self.update_callback(context)
 
@@ -276,6 +276,16 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         default="Red",
         description="Select color of the laser and it's muzzle flash.",
         update=update_color
+    )
+
+    custom_color : bpy.props.FloatVectorProperty(  
+       name="Custom Color",
+       subtype='COLOR',
+       size=4,
+       default=(1.0, 0, 0, 1),
+       min=0.0, max=1.0,
+       description="Select a custom color.",
+       update=update_callback
     )
 
 class SceneProperties(bpy.types.PropertyGroup):

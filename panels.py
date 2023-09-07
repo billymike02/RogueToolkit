@@ -67,6 +67,10 @@ class LaserCreator(bpy.types.Panel):
         else:
             row = layout.row()
             row.prop(laser_tool, "laser_color")
+            if laser_tool.laser_color == "Custom":
+                row = layout.row()
+                row.prop(laser_tool, "custom_color")
+
             row = layout.row()
             row.prop(laser_tool, "toggle_targeter")
             row = layout.row()
