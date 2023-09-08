@@ -15,8 +15,6 @@ addon_dir = os.path.dirname(os.path.abspath(__file__))
 blend_file_name = "objects.blend"
 blend_file_path = os.path.join(addon_dir, blend_file_name)
 
-print("Directory:", blend_file_path)
-
 class AttachToPath(bpy.types.Operator):
     
     bl_idname = "object.simple_operator"
@@ -345,7 +343,6 @@ class CreateLaser(bpy.types.Operator):
                 break
 
         if decal is None:
-            print("Decal is invalid!")
             return {'CANCELLED'}
 
         # Align to surface
@@ -471,6 +468,10 @@ class CreateLaser(bpy.types.Operator):
             obj.color = (0, 1, 0, 1)
         elif source.laser_tool.laser_color == "Custom":
             obj.color = source.laser_tool.custom_color
+
+    def create_impact_flash(self, context, source, rc_result, collision_frame):
+        pass
+
     
     # Responsible for creation of each individual laser
     def init_laser(self, source, context):
@@ -557,8 +558,6 @@ class CreateLaser(bpy.types.Operator):
 
         self.apply_color_to_obj(context, source, new_laser)
 
-        print(new_laser.color)
-
         # Create a unique action for each new_laser object
         new_laser.animation_data.action = bpy.data.actions.new(name=f"LaserAction_{new_laser.name}")
 
@@ -609,6 +608,10 @@ class CreateLaser(bpy.types.Operator):
                 hit_info = data[0]
                 if hit_info[0] is True:
                     self.create_decal(context, source, data[0], data[1])
+            if source.laser_tool.toggle_flash is True:
+                hit_info = data[0]
+                if hit_info[0] is True:
+                    self.create_impact_flash(context, source, data[0], data[1])
 
         # Save laser and frame to source
         new_item = source.laser_tool.instantiated_lasers.add()
@@ -730,6 +733,8 @@ class CreateLinkedEmitter(bpy.types.Operator):
             new_emitter.laser_tool.toggle_targeter = main_emitter.laser_tool.toggle_targeter
         if new_emitter.laser_tool.custom_color != main_emitter.laser_tool.custom_color:
             new_emitter.laser_tool.custom_color = main_emitter.laser_tool.custom_color
+        if new_emitter.laser_tool.toggle_flash != main_emitter.laser_tool.toggle_flash:
+            new_emitter.laser_tool.toggle_flash = main_emitter.laser_tool.toggle_flash
 
         bpy.context.view_layer.objects.active = main_emitter
         main_emitter.select_set(True)
@@ -752,11 +757,11 @@ class RecalculateLasers(bpy.types.Operator):
         bpy.ops.object.delete_all_lasers()
 
         laser_frames = set(laser_frames)
-        print("Laser frames:", laser_frames)
+        # print("Laser frames:", laser_frames)
 
         for laser_frame in laser_frames:
             bpy.context.scene.frame_set(laser_frame)
-            print("executed once")
+            # print("executed once")
             bpy.ops.object.create_laser()
 
     def execute(self, context):

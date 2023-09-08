@@ -96,6 +96,8 @@ class LaserCreator(bpy.types.Panel):
                 box.prop(laser_tool, "toggle_decals")
                 row = box.row()
                 row.prop(laser_tool, "decal_scale")
+                row = box.row()
+                row.prop(laser_tool, "toggle_flash")
 
             row = layout.separator()
             row = layout.row()
