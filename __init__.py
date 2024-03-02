@@ -24,6 +24,8 @@ classes = [
     SimplePanel,
     LaserCreator,
     WorldPanel, 
+    MiscCreator,
+    CreateFlakField,
     CreateStarfield,
     CreateLaserEmitter, 
     CreateLaser,

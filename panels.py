@@ -38,6 +38,19 @@ class SimplePanel(bpy.types.Panel):
         box.row().operator("object.create_lightspeed_jump", icon="EXPORT")
         box.row().operator("object.create_lightspeed_return", icon="IMPORT")
 
+class MiscCreator(bpy.types.Panel):
+    bl_idname = "VIEW3D_PT_misc_creator"
+    bl_label = "Misc."
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Rogue Toolkit"
+
+    def draw(self, context):
+        layout = self.layout
+
+        row = layout.row()
+        row.operator("scene.create_flak_field")
+
 class LaserCreator(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_laser_creator"
     bl_label = "Lasers"

@@ -7,6 +7,7 @@ from mathutils import Vector, Matrix
 # Hard-coded names
 laser_collection_name = 'RogueToolkit_Lasers'
 decal_collection_name = 'RogueToolkit_Decals'
+explosion_collection_name = 'RogueToolkit_Explosions'
 muzzlef_collection_name = 'RogueToolkit_MuzzleFlash'
 linkedobjs_collection_name = 'RogueToolkit_LinkedObjects'
 
@@ -390,6 +391,7 @@ class CreateLaser(bpy.types.Operator):
 
         context.scene.frame_set(origin_frame)
 
+
     def create_explosion(self, context, source, rc_result, collision_frame):
 
         origin_frame = context.scene.frame_current
@@ -402,7 +404,7 @@ class CreateLaser(bpy.types.Operator):
 
         for collection in data_to.collections:
             for obj in collection.objects:
-                move_to_collection(decal_collection_name, obj)
+                move_to_collection(explosion_collection_name, obj)
                 explosion = obj
 
                 bpy.context.view_layer.objects.active = explosion
@@ -423,7 +425,6 @@ class CreateLaser(bpy.types.Operator):
 
         # Align to surface
         face_normal = Vector(rc_result[2])
-                    
         z = Vector(explosion.matrix_world.col[2][:3])
         axis = z.cross(face_normal)
         angle_cos = z.dot(face_normal)
@@ -438,26 +439,10 @@ class CreateLaser(bpy.types.Operator):
         explosion.location = rc_result[1] + vec_rot
 
         explosion.scale = (source.laser_tool.explosion_scale, source.laser_tool.explosion_scale, source.laser_tool.explosion_scale)
-
         new_item = source.laser_tool.impact_decals.add()
         new_item.impact_decal = explosion
 
         context.scene.frame_set(collision_frame)
-
-        # # Create a Child Of constraint
-        # child_of_constraint = decal.constraints.new(type='CHILD_OF')
-        # child_of_constraint.target = rc_result[4]
-        # child_of_constraint.mute = False
-
-        # # Potentially disable for performance gains if it ends up being unnecessary 
-        # shrinkwrap_modifier = decal.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
-        # shrinkwrap_modifier.target = rc_result[4]
-        # shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
-        # shrinkwrap_modifier.offset = 0.005
-        # bpy.context.view_layer.objects.active = decal
-        # decal.select_set(True)
-        # bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
-
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
         explosion.select_set(False)
@@ -738,6 +723,103 @@ class CreateLaser(bpy.types.Operator):
         else:
             return {'FINISHED'}
 
+
+class CreateFlakField(bpy.types.Operator):
+    bl_idname = "scene.create_flak_field"
+    bl_label = "Create Flak Field"
+    bl_description = "Create volume in which explosions are random and everywhere!"
+
+    def create_explosion(self, context, location: tuple, start_frame, parent):
+        origin_frame = context.scene.frame_current
+
+        # Create decal mesh
+        explosion = None
+
+        with bpy.data.libraries.load(blend_file_path) as (data_from, data_to):
+            data_to.collections = ["billboards"]
+
+        for collection in data_to.collections:
+            for obj in collection.objects:
+                move_to_collection(explosion_collection_name, obj)
+                explosion = obj
+
+                bpy.context.view_layer.objects.active = explosion
+                explosion.select_set(True)
+                break
+
+        if explosion is None:
+            return {'CANCELLED'}
+        
+
+        
+        # Change start frame
+        if explosion.material_slots:
+            if explosion.material_slots[0]:
+                material = explosion.material_slots[0].material
+
+                if material.node_tree.nodes["Image Texture"]:
+                    material.node_tree.nodes["Image Texture"].image_user.frame_start = start_frame
+
+        # Make the child object the child of the parent object
+        explosion.parent = parent
+
+        # Optionally, you can keep the child object's transformation relative to the parent
+        explosion.matrix_parent_inverse = parent.matrix_world.inverted()
+        explosion.location = (location[0], location[1], location[2])
+        explosion.scale = (0.1, 0.1, 0.1)    
+
+        # Get the active camera
+        active_camera = bpy.context.scene.camera
+
+        # Add a Track To constraint to the object
+        track_constraint = explosion.constraints.new(type='TRACK_TO')
+        track_constraint.target = active_camera
+        track_constraint.track_axis = 'TRACK_NEGATIVE_Z'
+        track_constraint.up_axis = 'UP_Y' 
+
+
+        context.scene.frame_set(start_frame)
+        explosion.select_set(False)
+
+        context.scene.frame_set(origin_frame)
+
+    def execute(self, context):
+       
+        bpy.ops.object.empty_add(type='CUBE', align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+
+        # Get the newly created cube object
+        empty = bpy.context.object
+
+        location = empty.location
+        rotation = empty.rotation_euler
+        scale = empty.scale
+
+        # Calculate rotation matrix
+        rotation_matrix = rotation.to_matrix().to_4x4()
+
+        # Transform unit vectors representing axes by the rotation
+        axis_x = rotation_matrix @ Vector((1, 0, 0))
+        axis_y = rotation_matrix @ Vector((0, 1, 0))
+        axis_z = rotation_matrix @ Vector((0, 0, 1))
+
+        # Calculate maximum extents based on rotated axes and scale
+        max_x = location.x + scale.x * max(abs(axis_x.x), abs(axis_x.y), abs(axis_x.z))
+        max_y = location.y + scale.y * max(abs(axis_y.x), abs(axis_y.y), abs(axis_y.z))
+        max_z = location.z + scale.z * max(abs(axis_z.x), abs(axis_z.y), abs(axis_z.z))
+
+        # Print the maximum extents
+        print("Max X extent:", max_x)
+        print("Max Y extent:", max_y)
+        print("Max Z extent:", max_z)
+
+        for i in range(20):
+            startf = int(random.random() * 100)
+            pos = (random.uniform(-max_x, max_x), random.uniform(-max_y, max_y), random.uniform(-max_z, max_z))
+            self.create_explosion(context, pos, startf, empty)
+
+        empty.scale = (10, 10, 10)
+
+        return {'FINISHED'}
 
 class CreateLaserEmitter(bpy.types.Operator):
     bl_idname = "scene.create_laser_emitter"
