@@ -187,10 +187,10 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         type=bpy.types.Object
     )
     
-    muzzlef_scale: bpy.props.FloatVectorProperty(
+    muzzlef_scale: bpy.props.FloatProperty(
         name = "Muzzle Flash Scale",
         description = "Peak size of the muzzle flash (if enabled).",
-        default = (1, 1, 1),
+        default =  1,
         update=update_callback
     )
 
@@ -217,10 +217,10 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         update=update_callback
     )
 
-    laser_scale: bpy.props.FloatVectorProperty(
+    laser_scale: bpy.props.FloatProperty(
         name = "Laser Scale",
         description = "The scale of the lasers to be instantiated.",
-        default = (1.0, 1.0, 1.0),
+        default = 1,
         update=update_callback
     )
 
@@ -252,10 +252,17 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         update=update_callback
     )
 
-    decal_scale: bpy.props.FloatVectorProperty(
+    decal_scale: bpy.props.FloatProperty(
         name = "Decal Scale",
         description = "Size that decals will be made.",
-        default = (1, 1, 1),
+        default =  1,
+        update=update_callback
+    )
+
+    explosion_scale: bpy.props.FloatProperty(
+        name = "Explosion Scale",
+        description = "Size that explosions will be made.",
+        default = 1,
         update=update_callback
     )
 

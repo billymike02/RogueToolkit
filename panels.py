@@ -100,6 +100,8 @@ class LaserCreator(bpy.types.Panel):
                 row.prop(laser_tool, "toggle_flash")
                 row = box.row()
                 row.prop(laser_tool, "toggle_explosion")
+                row = box.row()
+                row.prop(laser_tool, "explosion_scale")
 
             row = layout.separator()
             row = layout.row()

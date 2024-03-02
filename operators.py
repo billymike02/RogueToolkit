@@ -361,7 +361,7 @@ class CreateLaser(bpy.types.Operator):
         vec_rot = vec @ inv
         decal.location = rc_result[1] + vec_rot
 
-        decal.scale = source.laser_tool.decal_scale
+        decal.scale = (source.laser_tool.decal_scale, source.laser_tool.decal_scale, source.laser_tool.decal_scale)
 
         new_item = source.laser_tool.impact_decals.add()
         new_item.impact_decal = decal
@@ -420,18 +420,6 @@ class CreateLaser(bpy.types.Operator):
 
                 if material.node_tree.nodes["Image Texture"]:
                     material.node_tree.nodes["Image Texture"].image_user.frame_start = collision_frame
-                else:
-                    print("bruhh ")
-
-
-                for node in material.node_tree.nodes:
-                    if node.type == 'TEX_IMAGE':
-                    # Assuming you want to change the start frame of the image texture
-                        if hasattr(node.image, "frame_start"):
-                            node.image.frame_start = 10  # Change the start frame to your desired value
-                        else:
-                            print("BROO")
-
 
         # Align to surface
         face_normal = Vector(rc_result[2])
@@ -449,7 +437,7 @@ class CreateLaser(bpy.types.Operator):
         vec_rot = vec @ inv
         explosion.location = rc_result[1] + vec_rot
 
-        explosion.scale = source.laser_tool.decal_scale
+        explosion.scale = (source.laser_tool.explosion_scale, source.laser_tool.explosion_scale, source.laser_tool.explosion_scale)
 
         new_item = source.laser_tool.impact_decals.add()
         new_item.impact_decal = explosion
@@ -611,7 +599,7 @@ class CreateLaser(bpy.types.Operator):
             source.laser_tool.muzzlef_obj.scale = (0, 0, 0)
             source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current - 1)
 
-            source.laser_tool.muzzlef_obj.scale = source.laser_tool.muzzlef_scale
+            source.laser_tool.muzzlef_obj.scale = (source.laser_tool.muzzlef_scale, source.laser_tool.muzzlef_scale, source.laser_tool.muzzlef_scale)
             source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current)
 
             source.laser_tool.muzzlef_obj.scale = (0, 0, 0)
@@ -665,7 +653,7 @@ class CreateLaser(bpy.types.Operator):
         rotation_vector = Vector((0,0,0)) @ laser_matrix
         new_laser.location = new_laser.location + rotation_vector
 
-        new_laser.scale = source.laser_tool.laser_scale
+        new_laser.scale = (source.laser_tool.laser_scale, source.laser_tool.laser_scale, source.laser_tool.laser_scale)
 
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
