@@ -302,6 +302,13 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         update=update_callback
     )
 
+    toggle_explosion: bpy.props.BoolProperty(
+        name="Toggle Collision Explosion",
+        description="Enable an explosion billboard when laser impacts an object.",
+        default=True,
+        update=update_callback
+    )
+
 class SceneProperties(bpy.types.PropertyGroup):
 
     starfield: bpy.props.PointerProperty(

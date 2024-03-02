@@ -390,6 +390,95 @@ class CreateLaser(bpy.types.Operator):
 
         context.scene.frame_set(origin_frame)
 
+    def create_explosion(self, context, source, rc_result, collision_frame):
+
+        origin_frame = context.scene.frame_current
+
+        # Create decal mesh
+        explosion = None
+
+        with bpy.data.libraries.load(blend_file_path) as (data_from, data_to):
+            data_to.collections = ["billboards"]
+
+        for collection in data_to.collections:
+            for obj in collection.objects:
+                move_to_collection(decal_collection_name, obj)
+                explosion = obj
+
+                bpy.context.view_layer.objects.active = explosion
+                explosion.select_set(True)
+                break
+
+        if explosion is None:
+            return {'CANCELLED'}
+        
+        
+        # Change start frame
+        if explosion.material_slots:
+            if explosion.material_slots[0]:
+                material = explosion.material_slots[0].material
+
+                if material.node_tree.nodes["Image Texture"]:
+                    material.node_tree.nodes["Image Texture"].image_user.frame_start = collision_frame
+                else:
+                    print("bruhh ")
+
+
+                for node in material.node_tree.nodes:
+                    if node.type == 'TEX_IMAGE':
+                    # Assuming you want to change the start frame of the image texture
+                        if hasattr(node.image, "frame_start"):
+                            node.image.frame_start = 10  # Change the start frame to your desired value
+                        else:
+                            print("BROO")
+
+
+        # Align to surface
+        face_normal = Vector(rc_result[2])
+                    
+        z = Vector(explosion.matrix_world.col[2][:3])
+        axis = z.cross(face_normal)
+        angle_cos = z.dot(face_normal)
+        angle_cos = max(min(angle_cos, 1.0), -1.0)
+        angle = math.acos(angle_cos)
+        m = Matrix.Rotation(angle, 4, axis)
+        explosion.matrix_world = m @ explosion.matrix_world
+        vec = Vector((0.0, 0.0, round(random.uniform(0.003, 0.006), 10)))
+        inv = explosion.matrix_world.copy()
+        inv.invert()
+        vec_rot = vec @ inv
+        explosion.location = rc_result[1] + vec_rot
+
+        explosion.scale = source.laser_tool.decal_scale
+
+        new_item = source.laser_tool.impact_decals.add()
+        new_item.impact_decal = explosion
+
+        context.scene.frame_set(collision_frame)
+
+        # # Create a Child Of constraint
+        # child_of_constraint = decal.constraints.new(type='CHILD_OF')
+        # child_of_constraint.target = rc_result[4]
+        # child_of_constraint.mute = False
+
+        # # Potentially disable for performance gains if it ends up being unnecessary 
+        # shrinkwrap_modifier = decal.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
+        # shrinkwrap_modifier.target = rc_result[4]
+        # shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
+        # shrinkwrap_modifier.offset = 0.005
+        # bpy.context.view_layer.objects.active = decal
+        # decal.select_set(True)
+        # bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
+
+        bpy.context.view_layer.objects.active = source
+        source.select_set(True)
+        explosion.select_set(False)
+
+        self.set_visibility(context, obj=explosion, fshow=collision_frame)
+
+        context.scene.frame_set(origin_frame)
+
+
     # Make source emitter check for collisions during the entire life of the projectile to be fired
     def check_collision(self, source, projectile, lifetime, context):
 
@@ -612,6 +701,10 @@ class CreateLaser(bpy.types.Operator):
                 hit_info = data[0]
                 if hit_info[0] is True:
                     self.create_impact_flash(context, source, data[0], data[1])
+            if source.laser_tool.toggle_explosion is True:
+                hit_info = data[0]
+                if hit_info[0] is True:
+                    self.create_explosion(context, source, data[0], data[1])
 
         # Save laser and frame to source
         new_item = source.laser_tool.instantiated_lasers.add()
