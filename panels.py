@@ -48,8 +48,38 @@ class MiscCreator(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        row = layout.row()
-        row.operator("scene.create_flak_field")
+        selected_objects = bpy.context.selected_objects
+        active_object = bpy.context.active_object
+
+        layout.label(text="Explosions")
+
+        box = layout.box()
+        
+        if active_object is None or len(selected_objects) == 0:
+            box.label(text="Flak Field")
+            row = box.row()
+            row.operator("scene.create_flak_field")
+            return
+
+        flakfield_tool = context.object.flakfield_tool
+
+        if (flakfield_tool.valid_flakfield is True):
+            row = box.row()
+            row.prop(flakfield_tool, "explosion_scale")
+            row = box.row()
+            row.prop(flakfield_tool, "start_frame")
+            row = box.row()
+            row.prop(flakfield_tool, "end_frame")
+            row = box.row()
+            row.prop(flakfield_tool, "num_explosions")
+            box = box.box()
+            row = box.row()
+            row.operator("object.simulate_flak_field")
+
+        if (len(flakfield_tool.explosion_billboards) > 0):
+            row = box.row()
+            row.alert = True
+            row.operator("object.delete_flak_field")
 
 class LaserCreator(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_laser_creator"

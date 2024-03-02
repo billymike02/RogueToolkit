@@ -25,7 +25,9 @@ classes = [
     LaserCreator,
     WorldPanel, 
     MiscCreator,
+    SimulateFlakField,
     CreateFlakField,
+    DeleteFlakField,
     CreateStarfield,
     CreateLaserEmitter, 
     CreateLaser,
@@ -36,6 +38,8 @@ classes = [
     LaserPointer,
     ImpactDecalPointer,
     LinkedEmitterPointer,
+    FlakExplosionPointer,
+    FlakFieldProperties,
     LaserFrame,
     CollisionFlashPointer,
     LaserEmitterProperties,
@@ -53,6 +57,7 @@ def register():
     bpy.types.Object.rigging_tool = bpy.props.PointerProperty(type=RiggingProperties) # save custom properties
     bpy.types.Scene.scene_tool = bpy.props.PointerProperty(type=SceneProperties)
     bpy.types.Object.laser_tool = bpy.props.PointerProperty(type=LaserEmitterProperties)
+    bpy.types.Object.flakfield_tool = bpy.props.PointerProperty(type=FlakFieldProperties)
 
     # Add the hotkey
     wm = bpy.context.window_manager

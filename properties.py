@@ -82,6 +82,9 @@ class LaserPointer(bpy.types.PropertyGroup):
 class ImpactDecalPointer(bpy.types.PropertyGroup):
     impact_decal: bpy.props.PointerProperty(type=bpy.types.Object)
 
+class FlakExplosionPointer(bpy.types.PropertyGroup):
+    explosion_billboard: bpy.props.PointerProperty(type=bpy.types.Object)
+
 class LinkedEmitterPointer(bpy.types.PropertyGroup):
 
     linked_emitter: bpy.props.PointerProperty(
@@ -96,6 +99,46 @@ class LaserFrame(bpy.types.PropertyGroup):
 class CollisionFlashPointer(bpy.types.PropertyGroup):
 
     collision_flash: bpy.props.PointerProperty(type=bpy.types.Object)
+
+class FlakFieldProperties(bpy.types.PropertyGroup):
+
+    def update_callback(self, context):
+        if self.end_frame <= self.start_frame + 1:
+            self.end_frame = self.start_frame + 1
+    
+
+
+    explosion_billboards: bpy.props.CollectionProperty(type=FlakExplosionPointer)
+
+    valid_flakfield: bpy.props.BoolProperty(default=False)
+
+    num_explosions: bpy.props.IntProperty(
+        name="Number of Explosions",
+        description="The number of explosions to occur within the field",
+        default = 10,
+        min = 1
+    )
+
+    explosion_scale: bpy.props.FloatProperty(
+        name="Explosion Scale",
+        description="Scale of the explosions within the field",
+        default=1,
+        min=0.01
+    )
+
+    start_frame: bpy.props.IntProperty(
+        name="Start Frame",
+        description="The frame to start the flak field simulation on.",
+        default = 1,
+        update = update_callback
+    )
+
+    end_frame: bpy.props.IntProperty(
+        name="End Frame",
+        description="The frame to end the flak field simulation on.",
+        default = 100,
+        update = update_callback
+    )
 
 class LaserEmitterProperties(bpy.types.PropertyGroup):
 

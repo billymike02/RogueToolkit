@@ -723,11 +723,10 @@ class CreateLaser(bpy.types.Operator):
         else:
             return {'FINISHED'}
 
-
-class CreateFlakField(bpy.types.Operator):
-    bl_idname = "scene.create_flak_field"
-    bl_label = "Create Flak Field"
-    bl_description = "Create volume in which explosions are random and everywhere!"
+class SimulateFlakField(bpy.types.Operator):
+    bl_idname = "object.simulate_flak_field"
+    bl_label = "Simulate Flak Field"
+    bl_description = "Simulate volume in which explosions are random and everywhere!"
 
     def create_explosion(self, context, location: tuple, start_frame, parent):
         origin_frame = context.scene.frame_current
@@ -766,7 +765,7 @@ class CreateFlakField(bpy.types.Operator):
         # Optionally, you can keep the child object's transformation relative to the parent
         explosion.matrix_parent_inverse = parent.matrix_world.inverted()
         explosion.location = (location[0], location[1], location[2])
-        explosion.scale = (0.1, 0.1, 0.1)    
+        explosion.scale = (parent.flakfield_tool.explosion_scale, parent.flakfield_tool.explosion_scale, parent.flakfield_tool.explosion_scale)  
 
         # Get the active camera
         active_camera = bpy.context.scene.camera
@@ -774,21 +773,19 @@ class CreateFlakField(bpy.types.Operator):
         # Add a Track To constraint to the object
         track_constraint = explosion.constraints.new(type='TRACK_TO')
         track_constraint.target = active_camera
-        track_constraint.track_axis = 'TRACK_NEGATIVE_Z'
+        track_constraint.track_axis = 'TRACK_Z'
         track_constraint.up_axis = 'UP_Y' 
 
 
         context.scene.frame_set(start_frame)
         explosion.select_set(False)
 
+        new_item = parent.flakfield_tool.explosion_billboards.add()
+        new_item.explosion_billboard = explosion
         context.scene.frame_set(origin_frame)
 
-    def execute(self, context):
-       
-        bpy.ops.object.empty_add(type='CUBE', align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+    def calculate_explosions(self, context, empty):
 
-        # Get the newly created cube object
-        empty = bpy.context.object
 
         location = empty.location
         rotation = empty.rotation_euler
@@ -807,17 +804,73 @@ class CreateFlakField(bpy.types.Operator):
         max_y = location.y + scale.y * max(abs(axis_y.x), abs(axis_y.y), abs(axis_y.z))
         max_z = location.z + scale.z * max(abs(axis_z.x), abs(axis_z.y), abs(axis_z.z))
 
-        # Print the maximum extents
-        print("Max X extent:", max_x)
-        print("Max Y extent:", max_y)
-        print("Max Z extent:", max_z)
-
-        for i in range(20):
-            startf = int(random.random() * 100)
+        for i in range(empty.flakfield_tool.num_explosions):
+            startf = int(random.uniform(empty.flakfield_tool.start_frame, empty.flakfield_tool.end_frame))
             pos = (random.uniform(-max_x, max_x), random.uniform(-max_y, max_y), random.uniform(-max_z, max_z))
             self.create_explosion(context, pos, startf, empty)
 
+    def execute(self, context):
+        empty = bpy.context.object
+
+        flakfield_properties = empty.flakfield_tool
+
+        # Create a list of objects to delete
+        objects_to_delete = [ref.explosion_billboard for ref in flakfield_properties.explosion_billboards]
+
+        # Clear the collection property
+        flakfield_properties.explosion_billboards.clear()
+
+        # Delete the objects from the scene
+        for obj in objects_to_delete:
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+        self.calculate_explosions(context, empty)
+
+        bpy.context.view_layer.objects.active = empty
+
+        return {'FINISHED'}
+
+
+class CreateFlakField(bpy.types.Operator):
+    bl_idname = "scene.create_flak_field"
+    bl_label = "Create Flak Field"
+    bl_description = "Create volume for simulation"
+
+    def execute(self, context):
+       
+        bpy.ops.object.empty_add(type='CUBE', align='WORLD', location=(0, 0, 0), scale=(1, 1, 1))
+        
+        # Get the newly created cube object
+        empty = bpy.context.object
         empty.scale = (10, 10, 10)
+        empty.name = 'Flakfield'
+
+        empty.flakfield_tool.valid_flakfield = True
+
+        bpy.context.view_layer.objects.active = empty
+
+        return {'FINISHED'}
+
+class DeleteFlakField(bpy.types.Operator):
+    bl_idname = "object.delete_flak_field"
+    bl_label = "Delete Flak Field"
+    bl_description = "Delete volume and all linked explosion billboards."
+
+    def execute(self, context):
+
+        flakfield_properties = context.object.flakfield_tool
+
+        # Create a list of objects to delete
+        objects_to_delete = [ref.explosion_billboard for ref in flakfield_properties.explosion_billboards]
+
+        # Clear the collection property
+        flakfield_properties.explosion_billboards.clear()
+
+        # Delete the objects from the scene
+        for obj in objects_to_delete:
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+        bpy.data.objects.remove(context.object, do_unlink=True)
 
         return {'FINISHED'}
 
@@ -838,6 +891,7 @@ class CreateLaserEmitter(bpy.types.Operator):
 
         bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
         new_emitter = bpy.context.active_object
+        new_emitter.name = "LaserEmitter"
 
         new_emitter.laser_tool.valid_emitter = True
 
