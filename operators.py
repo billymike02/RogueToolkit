@@ -303,6 +303,9 @@ class CreateLaser(bpy.types.Operator):
         decal_collection = bpy.data.collections.get(decal_collection_name)
         if decal_collection:
             ignored_objects += decal_collection.objects
+        explosion_collection = bpy.data.collections.get(explosion_collection_name)
+        if explosion_collection:
+            ignored_objects += explosion_collection.objects
 
         if emitter.laser_tool.muzzlef_obj is not None:
             ignored_objects.append(emitter.laser_tool.muzzlef_obj)
@@ -404,7 +407,7 @@ class CreateLaser(bpy.types.Operator):
         context.scene.frame_set(origin_frame)
 
 
-    def create_explosion(self, context, source, rc_result, collision_frame):
+    def create_explosion(self, context, source, rc_result, collision_frame, loc):
 
         origin_frame = context.scene.frame_current
 
@@ -436,6 +439,9 @@ class CreateLaser(bpy.types.Operator):
                     material.node_tree.nodes["Image Texture"].image_user.frame_start = collision_frame
 
         # Align to surface
+        explosion.location = loc
+
+        # Align to surface
         face_normal = Vector(rc_result[2])
         z = Vector(explosion.matrix_world.col[2][:3])
         axis = z.cross(face_normal)
@@ -448,11 +454,20 @@ class CreateLaser(bpy.types.Operator):
         inv = explosion.matrix_world.copy()
         inv.invert()
         vec_rot = vec @ inv
-        explosion.location = rc_result[1] + vec_rot
+        explosion.location = loc + vec_rot
 
         explosion.scale = (source.laser_tool.explosion_scale, source.laser_tool.explosion_scale, source.laser_tool.explosion_scale)
         new_item = source.laser_tool.impact_decals.add()
         new_item.impact_decal = explosion
+
+        # Track to camera
+        active_camera = bpy.context.scene.camera
+
+        # Add a Track To constraint to the object
+        track_constraint = explosion.constraints.new(type='TRACK_TO')
+        track_constraint.target = active_camera
+        track_constraint.track_axis = 'TRACK_Z'
+        track_constraint.up_axis = 'UP_Y' 
 
         context.scene.frame_set(collision_frame)
         bpy.context.view_layer.objects.active = source
@@ -701,7 +716,7 @@ class CreateLaser(bpy.types.Operator):
             if source.laser_tool.toggle_explosion is True:
                 hit_info = data[0]
                 if hit_info[0] is True:
-                    self.create_explosion(context, source, data[0], data[1])
+                    self.create_explosion(context, source, data[0], data[1], data[2])
 
         # Save laser and frame to source
         new_item = source.laser_tool.instantiated_lasers.add()
