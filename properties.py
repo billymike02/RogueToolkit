@@ -347,14 +347,21 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
 
     toggle_flash: bpy.props.BoolProperty(
         name="Toggle Collision Flash",
-        description="Enable a light flash when laser impacts an object.",
+        description="Enable a light flash when laser impacts an object",
         default=True,
         update=update_callback
     )
 
     toggle_explosion: bpy.props.BoolProperty(
         name="Toggle Collision Explosion",
-        description="Enable an explosion billboard when laser impacts an object.",
+        description="Enable an explosion billboard when laser impacts an object",
+        default=False,
+        update=update_callback
+    )
+
+    toggle_flak: bpy.props.BoolProperty(
+        name="Toggle Flak",
+        description="Enable an explosion at the termination point of each laser",
         default=True,
         update=update_callback
     )

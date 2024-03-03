@@ -19,7 +19,7 @@ blend_file_path = os.path.join(addon_dir, blend_file_name)
 class AttachToPath(bpy.types.Operator):
     
     bl_idname = "object.simple_operator"
-    bl_label = "Slave to Path"
+    bl_label = "Attach to Path"
     bl_description = "Automatically wrangles selected object and assigns it to the selected path"
 
     def execute(self, context):
@@ -30,12 +30,14 @@ class AttachToPath(bpy.types.Operator):
             self.report({'ERROR'}, "Only use when one object is selected.")
             return {'CANCELLED'}
         
+        origin_frame = int(context.scene.frame_start)
+
         bpy.ops.object.constraint_add(type='FOLLOW_PATH')
         bpy.context.object.constraints["Follow Path"].target = context.object.rigging_tool.path
         bpy.context.object.constraints["Follow Path"].use_fixed_location = True
         bpy.context.object.constraints["Follow Path"].use_curve_follow = True
         bpy.context.object.constraints["Follow Path"].forward_axis = context.object.rigging_tool.forward_axis
-        bpy.context.object.constraints["Follow Path"].keyframe_insert("offset_factor", frame=bpy.context.scene.frame_current)
+        bpy.context.object.constraints["Follow Path"].keyframe_insert("offset_factor", frame=origin_frame)
         bpy.context.object.constraints["Follow Path"].offset_factor = 1.0
         bpy.context.object.constraints["Follow Path"].keyframe_insert("offset_factor", frame=bpy.context.scene.frame_end)
 
@@ -44,6 +46,9 @@ class AttachToPath(bpy.types.Operator):
         
 
         context.object.rigging_tool.path = None
+
+        context.scene.frame_set(origin_frame)
+
         self.report({'INFO'}, "Successfully slaved object to path.")
 
         return {'FINISHED'}
@@ -166,6 +171,7 @@ class CreateFlightPlan(bpy.types.Operator):
 
         # Get the active object (which is the newly created path object)
         active_object = bpy.context.active_object
+        active_object.scale = (10, 10, 10)
         # Assign the path object to the property
         selected_obj.rigging_tool.path = active_object
 
@@ -389,8 +395,7 @@ class CreateLaser(bpy.types.Operator):
         decal.select_set(True)
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
-        ## TODO figure out how to move texture in front ##
-        vec = Vector((0.0, 0.0, 0.01))
+        vec = Vector((0.0, 0.0, 0.03))
         inv = decal.matrix_world.copy()
         inv.invert()
         # vec aligned to local axis in Blender 2.8+
@@ -405,6 +410,7 @@ class CreateLaser(bpy.types.Operator):
         self.set_visibility(context, obj=decal, fshow=collision_frame + 1)
 
         context.scene.frame_set(origin_frame)
+
 
 
     def create_explosion(self, context, source, rc_result, collision_frame, loc):
@@ -573,6 +579,66 @@ class CreateLaser(bpy.types.Operator):
     def create_impact_flash(self, context, source, rc_result, collision_frame):
         pass
 
+
+    def create_termination_flak(self, context, source, new_laser, origin_frame):
+
+        context.scene.frame_set(origin_frame + source.laser_tool.laser_lifetime)
+        flak_loc = Vector(new_laser.location) # use Vector constructor so it's a full copy
+        collision_frame = context.scene.frame_current
+        context.scene.frame_set(origin_frame)
+
+        # Create decal mesh
+        explosion = None
+
+        with bpy.data.libraries.load(blend_file_path) as (data_from, data_to):
+            data_to.collections = ["billboards"]
+
+        for collection in data_to.collections:
+            for obj in collection.objects:
+                move_to_collection(explosion_collection_name, obj)
+                explosion = obj
+
+                bpy.context.view_layer.objects.active = explosion
+                explosion.select_set(True)
+                break
+
+        if explosion is None:
+            return {'CANCELLED'}
+        
+        
+        # Change start frame
+        if explosion.material_slots:
+            if explosion.material_slots[0]:
+                material = explosion.material_slots[0].material
+
+                if material.node_tree.nodes["Image Texture"]:
+                    material.node_tree.nodes["Image Texture"].image_user.frame_start = collision_frame
+
+        # Set location
+        explosion.location = flak_loc
+
+        explosion.scale = (source.laser_tool.explosion_scale, source.laser_tool.explosion_scale, source.laser_tool.explosion_scale)
+        new_item = source.laser_tool.impact_decals.add()
+        new_item.impact_decal = explosion
+
+        # Track to camera
+        active_camera = bpy.context.scene.camera
+
+        # Add a Track To constraint to the object
+        track_constraint = explosion.constraints.new(type='TRACK_TO')
+        track_constraint.target = active_camera
+        track_constraint.track_axis = 'TRACK_Z'
+        track_constraint.up_axis = 'UP_Y' 
+
+        context.scene.frame_set(collision_frame)
+        bpy.context.view_layer.objects.active = source
+        source.select_set(True)
+        explosion.select_set(False)
+
+        self.set_visibility(context, obj=explosion, fshow=collision_frame)
+
+        context.scene.frame_set(origin_frame)
+
     
     # Responsible for creation of each individual laser
     def init_laser(self, source, context):
@@ -700,7 +766,12 @@ class CreateLaser(bpy.types.Operator):
         data = self.check_collision(source, new_laser, source.laser_tool.laser_lifetime, context)
 
         if data is None: # if there is no collision
+
+            if (source.laser_tool.toggle_flak is True):
+                self.create_termination_flak(context, source, new_laser, origin_frame)
+
             self.set_visibility(context, new_laser, context.scene.frame_current, context.scene.frame_current + source.laser_tool.laser_lifetime)
+
         else: # if there is a collision
             self.set_visibility(context, new_laser, context.scene.frame_current, data[1] + 1)
                         

@@ -11,27 +11,37 @@ class SimplePanel(bpy.types.Panel):
 
     def draw(self, context):
         
-        if context.object is None:
-            return
-        
         layout = self.layout
+
+        if context.object is None:
+            layout = layout.label(text="Select an object.")
+            return 
+    
         
         rigging_tool = context.object.rigging_tool
+
+        layout.label(text="Forward Axis")
+        row = layout.row()
+        row = row.prop(rigging_tool, "forward_axis", expand=True)
+        row = layout.row()
+        row.separator()
         
         # Paths and anim
-        layout.prop(rigging_tool, "path")
-        row = layout.row()
+        layout.label(text='Manual Effects')
+        box = layout.box()
+        row = box.row().label(text='Flight Animation')
+        box.prop(rigging_tool, "path")
+        row = box.row()
         row.operator("object.simple_operator", icon = "LINKED")
         
         if rigging_tool.path is None:
             row.enabled = False
             
-        layout.row().operator("object.create_flight_plan", icon = "STROKE")
-        layout.label(text="Forward Axis")
-        layout.row().prop(rigging_tool, "forward_axis", expand=True)
+        box.row().operator("object.create_flight_plan", icon = "STROKE")
+
         
         # Lightspeed
-        layout.label(text="Quick Effects")
+        layout.label(text="Auto Effects")
         box = layout.box()
         box.label(text="Lightspeed")
         box.row().prop(rigging_tool, "lightspeed_time")
@@ -55,7 +65,7 @@ class MiscCreator(bpy.types.Panel):
 
         box = None
         
-        if active_object is None or len(selected_objects) == 0:
+        if active_object is None or context.object.flakfield_tool.valid_flakfield is False:
             box = layout.box()
             box.label(text="Flak Field")
             row = box.row()
@@ -147,6 +157,9 @@ class LaserCreator(bpy.types.Panel):
                 row.prop(laser_tool, "toggle_explosion")
                 row = box.row()
                 row.prop(laser_tool, "explosion_scale")
+
+            row = layout.row()
+            row.prop(laser_tool, "toggle_flak")
 
             row = layout.separator()
             row = layout.row()
