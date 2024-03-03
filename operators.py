@@ -310,7 +310,7 @@ class CreateLaser(bpy.types.Operator):
         for source in ignored_objects:
             source.hide_viewport = setting
 
-    def create_decal(self, context, source, rc_result, collision_frame):
+    def create_decal(self, context, source, rc_result, collision_frame, loc):
 
         origin_frame = context.scene.frame_current
 
@@ -348,6 +348,11 @@ class CreateLaser(bpy.types.Operator):
 
         # Align to surface
         face_normal = Vector(rc_result[2])
+        print("Normal:", face_normal)
+        decal.location = loc
+
+        # Align to surface
+        face_normal = Vector(rc_result[2])
                     
         z = Vector(decal.matrix_world.col[2][:3])
         axis = z.cross(face_normal)
@@ -360,8 +365,9 @@ class CreateLaser(bpy.types.Operator):
         inv = decal.matrix_world.copy()
         inv.invert()
         vec_rot = vec @ inv
-        decal.location = rc_result[1] + vec_rot
+        decal.location = loc + vec_rot
 
+        
         decal.scale = (source.laser_tool.decal_scale, source.laser_tool.decal_scale, source.laser_tool.decal_scale)
 
         new_item = source.laser_tool.impact_decals.add()
@@ -378,10 +384,16 @@ class CreateLaser(bpy.types.Operator):
         shrinkwrap_modifier = decal.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
         shrinkwrap_modifier.target = rc_result[4]
         shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
-        shrinkwrap_modifier.offset = 0.005
         bpy.context.view_layer.objects.active = decal
         decal.select_set(True)
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
+
+        
+        # Calculate the offset along the normal
+        offset = face_normal * -0.01  # Adjust this value to control the offset distance
+        
+        # Apply the offset to the target object's location
+        decal.location += offset
 
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
@@ -460,12 +472,14 @@ class CreateLaser(bpy.types.Operator):
 
         # Save locations of the moving projectile
         locs = []
+        prev_ip = None # save locations of intersection points
         startf = origin_frame
         endf = startf + lifetime
 
         while context.scene.frame_current <= endf:
             projectile.hide_viewport = False
             locs.append(projectile.location.copy())
+            # print(projectile.location)
 
             # Increase the frame
             context.scene.frame_set(context.scene.frame_current + 1)
@@ -485,18 +499,19 @@ class CreateLaser(bpy.types.Operator):
         while context.scene.frame_current <= endf:
             self.ignore_objects(context, True, source)
             source_dir = Vector(source.matrix_world.col[2][:3])
-            result = bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph,source.matrix_world.translation,source_dir)
+            rc_result = bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph,locs[f],source_dir)
             
-            if result[0]:
+            # print("alt cast thing:", bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph, locs[f], source_dir))
 
+            if rc_result[0]:
                 
                 # print("Ray hit something:", result[4].name, "at frame:", context.scene.frame_current - 1)
-                intersection_point = result[1]
-                normal = result[2]
+                intersection_point = rc_result[1]
                 distance = (locs[f] - intersection_point).length
                 coll_frame = None
 
                 # print("Ray hit something:", result[4].name, "at frame:", context.scene.frame_current - 1, "and distance:", distance)
+                
 
                 if min_dist is None:
                     min_dist = distance
@@ -504,9 +519,12 @@ class CreateLaser(bpy.types.Operator):
                     min_dist = distance 
                 elif distance > min_dist:
                     coll_frame = context.scene.frame_current - 1
-                    # print("Obj:", projectile.name, "hit something:", result[4].name, "at frame:", coll_frame)
-                    data = [result, coll_frame, intersection_point, normal]
+
+                    # rc_result[2] is the impact normal
+                    data = [rc_result, coll_frame, prev_ip, rc_result[2]]
                     break
+
+                prev_ip = intersection_point
 
             # Increase the frame
             context.scene.frame_set(context.scene.frame_current + 1)
@@ -669,7 +687,7 @@ class CreateLaser(bpy.types.Operator):
             if source.laser_tool.toggle_decals is True:
                 hit_info = data[0]
                 if hit_info[0] is True:
-                    self.create_decal(context, source, data[0], data[1])
+                    self.create_decal(context, source, data[0], data[1], data[2])
             if source.laser_tool.toggle_flash is True:
                 hit_info = data[0]
                 if hit_info[0] is True:
