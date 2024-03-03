@@ -347,13 +347,10 @@ class CreateLaser(bpy.types.Operator):
             return {'CANCELLED'}
 
         # Align to surface
-        face_normal = Vector(rc_result[2])
-        print("Normal:", face_normal)
         decal.location = loc
 
         # Align to surface
         face_normal = Vector(rc_result[2])
-                    
         z = Vector(decal.matrix_world.col[2][:3])
         axis = z.cross(face_normal)
         angle_cos = z.dot(face_normal)
@@ -367,7 +364,7 @@ class CreateLaser(bpy.types.Operator):
         vec_rot = vec @ inv
         decal.location = loc + vec_rot
 
-        
+        # Set decal scale
         decal.scale = (source.laser_tool.decal_scale, source.laser_tool.decal_scale, source.laser_tool.decal_scale)
 
         new_item = source.laser_tool.impact_decals.add()
@@ -390,6 +387,13 @@ class CreateLaser(bpy.types.Operator):
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
         ## TODO figure out how to move texture in front ##
+        vec = Vector((0.0, 0.0, 0.01))
+        inv = decal.matrix_world.copy()
+        inv.invert()
+        # vec aligned to local axis in Blender 2.8+
+        # in previous versions: vec_rot = vec * inv
+        vec_rot = vec @ inv
+        decal.location += vec_rot
 
         bpy.context.view_layer.objects.active = source
         source.select_set(True)

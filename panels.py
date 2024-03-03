@@ -53,9 +53,10 @@ class MiscCreator(bpy.types.Panel):
 
         layout.label(text="Explosions")
 
-        box = layout.box()
+        box = None
         
         if active_object is None or len(selected_objects) == 0:
+            box = layout.box()
             box.label(text="Flak Field")
             row = box.row()
             row.operator("scene.create_flak_field")
@@ -64,6 +65,7 @@ class MiscCreator(bpy.types.Panel):
         flakfield_tool = context.object.flakfield_tool
 
         if (flakfield_tool.valid_flakfield is True):
+            box = layout.box()
             row = box.row()
             row.prop(flakfield_tool, "explosion_scale")
             row = box.row()
@@ -79,7 +81,7 @@ class MiscCreator(bpy.types.Panel):
         if (len(flakfield_tool.explosion_billboards) > 0):
             row = box.row()
             row.alert = True
-            row.operator("object.delete_flak_field")
+            row.operator("object.delete_flak_field", icon = 'TRASH')
 
 class LaserCreator(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_laser_creator"
