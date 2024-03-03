@@ -380,26 +380,22 @@ class CreateLaser(bpy.types.Operator):
         child_of_constraint.target = rc_result[4]
         child_of_constraint.mute = False
 
-        # Potentially disable for performance gains if it ends up being unnecessary 
+        # # Potentially disable for performance gains if it ends up being unnecessary 
         shrinkwrap_modifier = decal.modifiers.new(name="Shrinkwrap", type='SHRINKWRAP')
         shrinkwrap_modifier.target = rc_result[4]
         shrinkwrap_modifier.wrap_method = 'TARGET_PROJECT'
+        shrinkwrap_modifier.wrap_mode = 'ON_SURFACE'
         bpy.context.view_layer.objects.active = decal
         decal.select_set(True)
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
-        
-        # Calculate the offset along the normal
-        offset = face_normal * -0.01  # Adjust this value to control the offset distance
-        
-        # Apply the offset to the target object's location
-        decal.location += offset
+        ## TODO figure out how to move texture in front ##
 
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
         decal.select_set(False)
 
-        self.set_visibility(context, obj=decal, fshow=collision_frame)
+        self.set_visibility(context, obj=decal, fshow=collision_frame + 1)
 
         context.scene.frame_set(origin_frame)
 
@@ -473,6 +469,7 @@ class CreateLaser(bpy.types.Operator):
         # Save locations of the moving projectile
         locs = []
         prev_ip = None # save locations of intersection points
+        last_collision = None
         startf = origin_frame
         endf = startf + lifetime
 
@@ -525,6 +522,8 @@ class CreateLaser(bpy.types.Operator):
                     break
 
                 prev_ip = intersection_point
+                last_collision = [rc_result, context.scene.frame_current - 1, prev_ip, rc_result[2]]
+
 
             # Increase the frame
             context.scene.frame_set(context.scene.frame_current + 1)
@@ -537,7 +536,10 @@ class CreateLaser(bpy.types.Operator):
         context.scene.frame_set(origin_frame)
 
         # Return details
-        return data
+        if last_collision != None:
+            return last_collision
+        else:
+            return data
 
     def apply_color_to_obj(self, context, source, obj):
         if source.laser_tool.laser_color == "Red":
@@ -681,7 +683,7 @@ class CreateLaser(bpy.types.Operator):
         if data is None: # if there is no collision
             self.set_visibility(context, new_laser, context.scene.frame_current, context.scene.frame_current + source.laser_tool.laser_lifetime)
         else: # if there is a collision
-            self.set_visibility(context, new_laser, context.scene.frame_current, data[1])
+            self.set_visibility(context, new_laser, context.scene.frame_current, data[1] + 1)
                         
             # Decal handling
             if source.laser_tool.toggle_decals is True:
