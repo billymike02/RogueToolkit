@@ -567,14 +567,31 @@ class CreateLaser(bpy.types.Operator):
             return data
 
     def apply_color_to_obj(self, context, source, obj):
+        new_color = (0, 0, 0, 0)
         if source.laser_tool.laser_color == "Red":
-            obj.color = (1.0, 0, 0, 1.0)
+            new_color = (1.0, 0, 0, 1.0)
+            
         elif source.laser_tool.laser_color == "Blue":
-            obj.color = (0, 0, 1.0, 1.0)
+            new_color = (0, 0, 1.0, 1.0)
         elif source.laser_tool.laser_color == "Green":
-            obj.color = (0, 1, 0, 1)
+            new_color = (0, 1, 0, 1)
         elif source.laser_tool.laser_color == "Custom":
-            obj.color = source.laser_tool.custom_color
+            new_color = source.laser_tool.custom_color
+
+        obj.color = new_color
+
+        # Make sure the object has a material
+        if obj.material_slots:
+            # Access the first material slot
+            material_slot = obj.material_slots[0]
+
+            # Make sure the material slot is assigned to a material
+            if material_slot.material:
+                # Access the material
+                material = material_slot.material
+
+            # Set the viewport display color
+            material.diffuse_color = new_color
 
     def create_impact_flash(self, context, source, rc_result, collision_frame):
         pass
