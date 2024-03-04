@@ -467,11 +467,14 @@ class CreateLaser(bpy.types.Operator):
         new_item.impact_decal = explosion
 
         # Track to camera
-        active_camera = bpy.context.scene.camera
+        orient_target = bpy.context.scene.camera
+
+        if (orient_target is None):
+            orient_target = source
 
         # Add a Track To constraint to the object
         track_constraint = explosion.constraints.new(type='TRACK_TO')
-        track_constraint.target = active_camera
+        track_constraint.target = orient_target
         track_constraint.track_axis = 'TRACK_Z'
         track_constraint.up_axis = 'UP_Y' 
 
@@ -634,16 +637,19 @@ class CreateLaser(bpy.types.Operator):
         # Set location
         explosion.location = flak_loc
 
-        explosion.scale = (source.laser_tool.explosion_scale, source.laser_tool.explosion_scale, source.laser_tool.explosion_scale)
+        explosion.scale = (source.laser_tool.flak_scale, source.laser_tool.flak_scale, source.laser_tool.flak_scale)
         new_item = source.laser_tool.impact_decals.add()
         new_item.impact_decal = explosion
 
         # Track to camera
-        active_camera = bpy.context.scene.camera
+        orient_target = bpy.context.scene.camera
+
+        if (orient_target is None):
+            orient_target = source
 
         # Add a Track To constraint to the object
         track_constraint = explosion.constraints.new(type='TRACK_TO')
-        track_constraint.target = active_camera
+        track_constraint.target = orient_target
         track_constraint.track_axis = 'TRACK_Z'
         track_constraint.up_axis = 'UP_Y' 
 
@@ -894,15 +900,17 @@ class SimulateFlakField(bpy.types.Operator):
         explosion.location = (location[0], location[1], location[2])
         explosion.scale = (parent.flakfield_tool.explosion_scale, parent.flakfield_tool.explosion_scale, parent.flakfield_tool.explosion_scale)  
 
-        # Get the active camera
-        active_camera = bpy.context.scene.camera
+        # Track to camera
+        orient_target = bpy.context.scene.camera
+
+        if (orient_target is None):
+            orient_target = parent
 
         # Add a Track To constraint to the object
         track_constraint = explosion.constraints.new(type='TRACK_TO')
-        track_constraint.target = active_camera
+        track_constraint.target = orient_target
         track_constraint.track_axis = 'TRACK_Z'
         track_constraint.up_axis = 'UP_Y' 
-
 
         context.scene.frame_set(start_frame)
         explosion.select_set(False)

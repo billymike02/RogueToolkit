@@ -126,6 +126,7 @@ class FlakFieldProperties(bpy.types.PropertyGroup):
         min=0.01
     )
 
+
     start_frame: bpy.props.IntProperty(
         name="Start Frame",
         description="The frame to start the flak field simulation on.",
@@ -365,6 +366,14 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         default=True,
         update=update_callback
     )
+
+    flak_scale: bpy.props.FloatProperty(
+    name="Flak Scale",
+    description='Scale of the flak sprite',
+    default=1,
+    min=0.01
+    )
+
 
 class SceneProperties(bpy.types.PropertyGroup):
 

@@ -161,6 +161,12 @@ class LaserCreator(bpy.types.Panel):
             row = layout.row()
             row.prop(laser_tool, "toggle_flak")
 
+            if laser_tool.toggle_flak is True:
+                box = layout.box()
+                row = box.row()
+                row.prop(laser_tool, "flak_scale")
+                
+
             row = layout.separator()
             row = layout.row()
             row.prop(laser_tool, "linked_emitters")
