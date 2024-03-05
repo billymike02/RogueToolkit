@@ -6,16 +6,17 @@ from RogueToolkit.properties import *
 # to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application (in %appdata%)
 
 def delete_obj(scene):
-    for obj in scene.objects:
-        # Check if the object is in your custom collection property
-        if obj.projectile_tool and obj.projectile_tool.valid_emitter:
-            # obj.projectile_tool.update_callback(bpy.context)
-            # print(obj.projectile_tool.linked_emitters[0].name)
-            pass
+    print("Updating depsgraph...")
 
+    # for obj in scene.objects:
+    #     # Check if the object is in your custom collection property
+    #     if obj.projectile_tool and obj.projectile_tool.valid_emitter:
+    #         # Purge any linked emitters if they've been deleted
+    #         for i, item in enumerate(obj.projectile_tool.linked_emitters):
+    #             child = item.linked_emitter
 
-
-
+    #             if not child or child.name not in scene.objects:
+    #                 obj.projectile_tool.linked_emitters.remove(i)
 
 
 # basic information

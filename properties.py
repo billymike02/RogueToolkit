@@ -76,7 +76,11 @@ class RiggingProperties(bpy.types.PropertyGroup):
         default="FORWARD_X"
     )
 
+
+
+
 class ProjectilePointer(bpy.types.PropertyGroup):
+
     instantiated_projectile: bpy.props.PointerProperty(type=bpy.types.Object)
 
 class ImpactDecalPointer(bpy.types.PropertyGroup):
@@ -143,46 +147,11 @@ class FlakFieldProperties(bpy.types.PropertyGroup):
 
 class ProjectileEmitterProperties(bpy.types.PropertyGroup):
 
-    def update_callback(self, context):
+    def sync(self, context):
 
-        # avoid updating if you're linked to a parent
-        if self.child_emitter is True:
-            return
+        update = ['muzzlef_scale', 'projectile_obj', 'projectile_velocity','projectile_lifetime', 'projectile_scale', 'toggle_collision', 'toggle_muzzlef', 'toggle_sparks', 'toggle_decals','decal_scale', 'explosion_scale', 'tracked_obj', 'toggle_targeter', 'projectile_color', 'custom_color', 'toggle_flash','toggle_explosion', 'toggle_flak', 'flak_scale']
 
-        for child_sh in self.linked_emitters:
-
-            if child_sh.name not in bpy.data.objects:
-                item_to_remove = None
-
-                for i, item in enumerate(self.linked_emitters):
-                    # Example condition: remove the item with the name 'item_name'
-                    if item.name == child_sh.name:
-                        item_to_remove = i
-                        break
-
-                if item_to_remove is not None:
-                    self.linked_emitters.remove(item_to_remove)
-
-                continue
-
-
-            linked_emitter = child_sh.linked_emitter
-
-            attributes = dir(linked_emitter.projectile_tool)
-
-            for attribute in attributes:
-
-                if not isinstance(getattr(self, attribute), bpy.props.CollectionProperty):
-                    try:
-                        setattr(linked_emitter.projectile_tool, attribute, getattr(self, attribute))
-                    except:
-                        pass # some things can't be updated and that's fine
-
-        # print(self,"has updated its settings.")
-
-    def update_color(self, context):
-
-        if self.muzzlef_obj:
+        if self.muzzlef_obj:    
             if self.projectile_color == "Red":
                 self.muzzlef_obj.color = (1.0, 0, 0, 1.0)
             elif self.projectile_color == "Blue":
@@ -192,7 +161,28 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
             elif self.projectile_color == "Custom":
                 self.muzzlef_obj.color = self.custom_color
 
-        self.update_callback(context)
+        # avoid updating if you're linked to a parent
+        if self.child_emitter is True:
+            return
+        
+        # Purge any linked emitters if they've been deleted
+        for i, item in enumerate(self.linked_emitters):
+            child = item.linked_emitter
+
+            if not child or child.name not in context.scene.objects:
+                self.linked_emitters.remove(i)
+
+        for child_sh in self.linked_emitters:
+            linked_emitter = child_sh.linked_emitter
+            properties = [prop for prop in dir(linked_emitter.projectile_tool) if not callable(getattr(linked_emitter.projectile_tool, prop))]
+
+            for property in properties:
+
+                if property in update:
+                    try:
+                        setattr(linked_emitter.projectile_tool, property, getattr(self, property))
+                    except:
+                        pass # some things can't be updated and that's fine
 
     instantiated_projectiles: bpy.props.CollectionProperty(type=ProjectilePointer)
 
@@ -228,14 +218,14 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         name = "Muzzle Flash Scale",
         description = "Peak size of the muzzle flash (if enabled).",
         default =  1,
-        update=update_callback
+        update=sync
     )
 
     projectile_obj: bpy.props.PointerProperty(
         name = "Projectile Object",
         description = "Object to instantiate as projectile.",
         type=bpy.types.Object,
-        update=update_callback
+        update=sync
     )
 
     projectile_velocity: bpy.props.FloatProperty(
@@ -243,7 +233,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         description = "Velocity of projectiles created by emitter.",
         default = 1.0,
         min = 0.1,
-        update=update_callback
+        update=sync
     )
 
     projectile_lifetime: bpy.props.IntProperty(
@@ -251,56 +241,56 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         description = "How long the projectile will 'exist' within the scene.",
         default = 50,
         min = 1,
-        update=update_callback
+        update=sync
     )
 
     projectile_scale: bpy.props.FloatProperty(
         name = "Scale",
         description = "The scale of the projectiles to be instantiated.",
         default = 1,
-        update=update_callback
+        update=sync
     )
 
     toggle_collision: bpy.props.BoolProperty(
         name = "Enable Collision",
         description = "Sets whether or not projectile should be destroyed when colliding with another object.",
         default = True,
-        update=update_callback
+        update=sync
     )
 
     toggle_muzzlef: bpy.props.BoolProperty(
         name = "Muzzle Flash",
         description = "Toggle creation of muzzle flashes when the projectiles are created by this emitter.",
         default = True,
-        update=update_callback
+        update=sync
     )
 
     toggle_sparks: bpy.props.BoolProperty(
         name = "Sparks",
         description = "Set whether or not the projectile should create sparks on impact.",
         default = True,
-        update=update_callback
+        update=sync
     )
 
     toggle_decals: bpy.props.BoolProperty(
         name = "Draw Impact Marks",
         description = "Set whether or not physical markers are made where the projectile impacts objects.",
         default = True,
-        update=update_callback
+        update=sync
     )
 
     decal_scale: bpy.props.FloatProperty(
         name = "Decal Scale",
         description = "Size that decals will be made.",
         default =  1,
-        update=update_callback
+        update=sync
     )
 
     explosion_scale: bpy.props.FloatProperty(
         name = "Billboard Scale",
         description = "Size that explosions will be made.",
         default = 1,
-        update=update_callback
+        update=sync
     )
 
     tracked_obj: bpy.props.PointerProperty(
@@ -326,7 +316,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         name="Color",
         default="Red",
         description="Select color of the projectile and it's muzzle flash.",
-        update=update_color
+        update=sync
     )
 
     custom_color : bpy.props.FloatVectorProperty(  
@@ -336,28 +326,28 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
        default=(1.0, 0, 0, 1),
        min=0.0, max=1.0,
        description="Select a custom color.",
-       update=update_callback
+       update=sync
     )
 
     toggle_flash: bpy.props.BoolProperty(
         name="Flash on Impact",
         description="Enable a light flash when projectile impacts an object",
         default=True,
-        update=update_callback
+        update=sync
     )
 
     toggle_explosion: bpy.props.BoolProperty(
         name="Explode on Impact",
         description="Enable an explosion billboard when projectile impacts an object",
         default=False,
-        update=update_callback
+        update=sync
     )
 
     toggle_flak: bpy.props.BoolProperty(
         name="Toggle Flak",
         description="Enable an explosion at the termination point of each projectile",
-        default=True,
-        update=update_callback
+        default=False,
+        update=sync
     )
 
     flak_scale: bpy.props.FloatProperty(

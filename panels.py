@@ -110,13 +110,14 @@ class ProjectileCreator(bpy.types.Panel):
             return
         
         projectile_tool = context.object.projectile_tool
-
         
         if projectile_tool.child_emitter is True:
             row = layout.row()
-            row.operator("object.delete_linked_emitter")
+            row.alert=True
+            row.operator("object.delete_linked_emitter", icon='TRASH')
+            
             row = layout.row()
-            row.label(text="Parent Emitter: " + context.object.projectile_tool.parent_emitter.name)
+            row.label(text="Owner: " + context.object.projectile_tool.parent_emitter.name)
         else:
             row = layout.row()
             row.prop(projectile_tool, "projectile_color")
@@ -139,6 +140,7 @@ class ProjectileCreator(bpy.types.Panel):
             if projectile_tool.toggle_muzzlef is True:
                 row = layout.row()
                 row.prop(projectile_tool, "muzzlef_scale")
+
             
             row = layout.separator()
             box = layout.box()
@@ -167,6 +169,8 @@ class ProjectileCreator(bpy.types.Panel):
                 
 
             row = layout.separator()
+            # row = layout.row()
+            # row.prop(projectile_tool, "linked_emitters")
             row = layout.row()
             row.operator("object.create_linked_emitter", icon='LINKED')
             row = layout.separator()

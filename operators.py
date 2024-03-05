@@ -534,7 +534,7 @@ class CreateProjectile(bpy.types.Operator):
                 distance = (locs[f] - intersection_point).length
                 coll_frame = None
 
-                # print("Ray hit something:", result[4].name, "at frame:", context.scene.frame_current - 1, "and distance:", distance)
+                print("Ray hit something:", rc_result[4].name, "and the source:", source.name)
                 
 
                 if min_dist is None:
@@ -680,40 +680,49 @@ class CreateProjectile(bpy.types.Operator):
 
             if source.projectile_tool.muzzlef_obj is None:
 
-                 # Create projectile mesh
-                muzzlef = None
+                # Create muzzle
+                new_muzzle = None
 
                 try:
-                    template_muzzlef = bpy.data.objects["MuzzleFlash"]
+                    template_muzzle = bpy.data.objects["MuzzleFlash"]
                 except:
+
                     with bpy.data.libraries.load(blend_file_path, link=True) as (data_from, data_to):
                         data_to.collections = ["muzzlef"]
 
                     for collection in data_to.collections:
                         for obj in collection.objects:
                             move_to_collection(linkedobjs_collection_name, obj)
-                            template_muzzlef = obj
+                            template_muzzle = obj
 
-                            bpy.context.view_layer.objects.active = muzzlef
-                            template_muzzlef.select_set(False)
+                            bpy.context.view_layer.objects.active = new_muzzle
+                            template_muzzle.select_set(False)
 
                             break
 
-                muzzlef = template_muzzlef.copy()
-                muzzlef.parent = source
 
-                self.apply_color_to_obj(context, source, muzzlef)
+                for view_layer in context.scene.view_layers:
+                    view_layer.layer_collection.children[linkedobjs_collection_name].exclude = True  
+            
 
-                muzzlef.animation_data_create()
-                muzzlef.animation_data.action = bpy.data.actions.new(name=f"MuzzleAction_{muzzlef.name}")
+                new_muzzle = template_muzzle.copy()
+                new_muzzle.parent = source
+                new_muzzle.animation_data_create()
+
+                self.apply_color_to_obj(context, source, new_muzzle)
+
+                new_muzzle.animation_data_create()
+                new_muzzle.animation_data.action = bpy.data.actions.new(name=f"MuzzleAction_{new_muzzle.name}")
+
+                move_to_collection(muzzlef_collection_name, new_muzzle)
 
                 bpy.context.view_layer.objects.active = source
                 source.select_set(True)
-                muzzlef.select_set(False)
+                new_muzzle.select_set(False)
 
-                move_to_collection(muzzlef_collection_name, muzzlef)
+                source.projectile_tool.muzzlef_obj = new_muzzle
 
-                source.projectile_tool.muzzlef_obj = muzzlef
+                print(source.name, "BING has the muzzle", new_muzzle.name)
 
             # Animate visibility
             source.projectile_tool.muzzlef_obj.scale = (0, 0, 0)
@@ -803,6 +812,7 @@ class CreateProjectile(bpy.types.Operator):
             self.set_visibility(context, new_projectile, context.scene.frame_current, context.scene.frame_current + source.projectile_tool.projectile_lifetime)
 
         else: # if there is a collision
+
             self.set_visibility(context, new_projectile, context.scene.frame_current, data[1] + 1)
                         
             # Decal handling
@@ -835,11 +845,10 @@ class CreateProjectile(bpy.types.Operator):
 
         if bpy.context.object is None:
             return {'CANCELLED'}
-
         if bpy.context.object.projectile_tool.valid_emitter is False:
             return {'CANCELLED'}
-
         if bpy.context.object.projectile_tool.child_emitter is True:
+            self.report({'INFO'}, "Select owning emitter to use.")
             return {'CANCELLED'}
 
         results = []
@@ -1067,6 +1076,7 @@ class CreateLinkedEmitter(bpy.types.Operator):
 
         added_emitter.linked_emitter.projectile_tool.parent_emitter = main_emitter
     
+        main_emitter.projectile_tool.sync(context)
 
         return {'FINISHED'}
 
@@ -1075,31 +1085,28 @@ class RecalculateProjectiles(bpy.types.Operator):
     bl_label = "Update Simulation"
     bl_description = "Recalculate all projectiles created by this emitter. (for use when settings are changed, etc.)"
 
-    def recalculate_emitter_projectiles(self, source, context):
-
-        projectile_frames = []
-
-        for item in source.projectile_tool.projectile_frames:
-            projectile_frames.append(item.projectile_frame)
-
-        bpy.ops.object.delete_all_projectiles()
-
-        projectile_frames = set(projectile_frames)
-        # print("Projectile frames:", projectile_frames)
-
-        for projectile_frame in projectile_frames:
-            bpy.context.scene.frame_set(projectile_frame)
-            # print("executed once")
-            bpy.ops.object.create_projectile()
 
     def execute(self, context):
+        source = bpy.context.object
 
-        selected_emitter = bpy.context.object
-        curr_frame = bpy.context.scene.frame_current
+        projectile_frames =[]
+        
+        for frame in source.projectile_tool.projectile_frames:
+            projectile_frames.append(frame)
 
-        self.recalculate_emitter_projectiles(selected_emitter, context)
+        bpy.ops.object.delete_all_projectiles()
+        print("deleted all emitter linked objs")
 
-        bpy.context.scene.frame_set(curr_frame)
+
+        origin_frame = bpy.context.scene.frame_current
+
+        for item in projectile_frames:
+            bpy.context.scene.frame_set(item.projectile_frame)
+            print(bpy.context.scene.frame_current, "firing")
+            bpy.ops.object.create_projectile()
+
+
+        bpy.context.scene.frame_set(origin_frame)
         return {'FINISHED'}
 
 
@@ -1127,6 +1134,7 @@ class DeleteAllProjectiles(bpy.types.Operator):
             bpy.data.objects.remove(obj, do_unlink=True)
 
         if emitter_properties.muzzlef_obj:
+            # print("deleting muzzle", emitter_properties.muzzlef_obj.name)
             bpy.data.objects.remove(emitter_properties.muzzlef_obj, do_unlink=True)
 
         self.report({'INFO'}, "All emitter's projectiles deleted.")
@@ -1152,8 +1160,8 @@ class DeleteAllProjectiles(bpy.types.Operator):
 
 class DeleteLinkedEmitter(bpy.types.Operator):
     bl_idname = "object.delete_linked_emitter"
-    bl_label = "Delete Linked Emitter"
-    bl_description = "DaDASD"
+    bl_label = "Remove"
+    bl_description = "Deletes this linked emitter along with all it's simulated objects"
 
     def execute(self, context):
         if context.object.projectile_tool.child_emitter is False:
