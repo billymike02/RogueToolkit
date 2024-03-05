@@ -5,6 +5,19 @@ from RogueToolkit.properties import *
 
 # to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application (in %appdata%)
 
+def delete_obj(scene):
+    for obj in scene.objects:
+        # Check if the object is in your custom collection property
+        if obj.projectile_tool and obj.projectile_tool.valid_emitter:
+            # obj.projectile_tool.update_callback(bpy.context)
+            # print(obj.projectile_tool.linked_emitters[0].name)
+            pass
+
+
+
+
+
+
 # basic information
 bl_info = {
     "name": "Rogue Toolkit",
@@ -66,6 +79,8 @@ def register():
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
         kmi = km.keymap_items.new(CreateProjectile.bl_idname, type='K', value='PRESS', ctrl=False)
         addon_keymaps.append((km, kmi))
+
+    bpy.app.handlers.depsgraph_update_post.append(delete_obj)
 
 
 def unregister():

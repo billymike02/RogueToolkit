@@ -671,6 +671,7 @@ class CreateProjectile(bpy.types.Operator):
     
     # Responsible for creation of each individual projectile
     def init_projectile(self, source, context):
+
         origin_frame = context.scene.frame_current
         location = (0, 0, 0)
 
@@ -846,10 +847,14 @@ class CreateProjectile(bpy.types.Operator):
         selected_emitter = bpy.context.object
         results.append(self.init_projectile(selected_emitter, context))
 
-        for child in selected_emitter.projectile_tool.linked_emitters:
-            linked_emitter = child.linked_emitter
+        # Purge any linked emitters if they've been deleted
+        for i, item in enumerate(selected_emitter.projectile_tool.linked_emitters):
+            child = item.linked_emitter
 
-            results.append(self.init_projectile(linked_emitter, context))
+            if not child or child.name not in context.scene.objects:
+                selected_emitter.projectile_tool.linked_emitters.remove(i)
+            else:
+                results.append(self.init_projectile(child, context))
 
         curr_selection = bpy.context.object
         curr_selection.select_set(False)
@@ -1061,42 +1066,7 @@ class CreateLinkedEmitter(bpy.types.Operator):
         added_emitter.linked_emitter = new_emitter
 
         added_emitter.linked_emitter.projectile_tool.parent_emitter = main_emitter
-       
-        # Synchronize all settings that you want to copy from parent to linked here.
-        if new_emitter.projectile_tool.toggle_collision != main_emitter.projectile_tool.toggle_collision:
-            new_emitter.projectile_tool.toggle_collision = main_emitter.projectile_tool.toggle_collision
-        if new_emitter.projectile_tool.projectile_scale != main_emitter.projectile_tool.projectile_scale:
-            new_emitter.projectile_tool.projectile_scale = main_emitter.projectile_tool.projectile_scale
-        if new_emitter.projectile_tool.muzzlef_scale != main_emitter.projectile_tool.muzzlef_scale:
-            new_emitter.projectile_tool.muzzlef_scale = main_emitter.projectile_tool.muzzlef_scale
-        if new_emitter.projectile_tool.projectile_obj != main_emitter.projectile_tool.projectile_obj:
-            new_emitter.projectile_tool.projectile_obj = main_emitter.projectile_tool.projectile_obj
-        if new_emitter.projectile_tool.projectile_velocity != main_emitter.projectile_tool.projectile_velocity:
-            new_emitter.projectile_tool.projectile_velocity = main_emitter.projectile_tool.projectile_velocity
-        if new_emitter.projectile_tool.projectile_lifetime != main_emitter.projectile_tool.projectile_lifetime:
-            new_emitter.projectile_tool.projectile_lifetime = main_emitter.projectile_tool.projectile_lifetime
-        if new_emitter.projectile_tool.toggle_muzzlef != main_emitter.projectile_tool.toggle_muzzlef:
-            new_emitter.projectile_tool.toggle_muzzlef = main_emitter.projectile_tool.toggle_muzzlef
-        if new_emitter.projectile_tool.toggle_sparks != main_emitter.projectile_tool.toggle_sparks:
-            new_emitter.projectile_tool.toggle_sparks = main_emitter.projectile_tool.toggle_sparks
-        if new_emitter.projectile_tool.toggle_decals != main_emitter.projectile_tool.toggle_decals:
-            new_emitter.projectile_tool.toggle_decals = main_emitter.projectile_tool.toggle_decals
-        if new_emitter.projectile_tool.decal_scale != main_emitter.projectile_tool.decal_scale:
-            new_emitter.projectile_tool.decal_scale = main_emitter.projectile_tool.decal_scale
-        if new_emitter.projectile_tool.tracked_obj != main_emitter.projectile_tool.tracked_obj:
-            new_emitter.projectile_tool.tracked_obj = main_emitter.projectile_tool.tracked_obj
-        if new_emitter.projectile_tool.projectile_color != main_emitter.projectile_tool.projectile_color:
-            new_emitter.projectile_tool.projectile_color = main_emitter.projectile_tool.projectile_color
-        if new_emitter.projectile_tool.toggle_targeter != main_emitter.projectile_tool.toggle_targeter:
-            new_emitter.projectile_tool.toggle_targeter = main_emitter.projectile_tool.toggle_targeter
-        if new_emitter.projectile_tool.custom_color != main_emitter.projectile_tool.custom_color:
-            new_emitter.projectile_tool.custom_color = main_emitter.projectile_tool.custom_color
-        if new_emitter.projectile_tool.toggle_flash != main_emitter.projectile_tool.toggle_flash:
-            new_emitter.projectile_tool.toggle_flash = main_emitter.projectile_tool.toggle_flash
-
-        bpy.context.view_layer.objects.active = main_emitter
-        main_emitter.select_set(True)
-        added_emitter.linked_emitter.select_set(False)
+    
 
         return {'FINISHED'}
 
@@ -1168,9 +1138,14 @@ class DeleteAllProjectiles(bpy.types.Operator):
         selected_emitter = bpy.context.object
 
         self.delete_emitters_projectiles(selected_emitter, context)
-        for child in selected_emitter.projectile_tool.linked_emitters:
-            linked_emitter = child.linked_emitter
-            self.delete_emitters_projectiles(linked_emitter, context)
+        # Purge any linked emitters if they've been deleted
+        for i, item in enumerate(selected_emitter.projectile_tool.linked_emitters):
+            child = item.linked_emitter
+
+            if not child or child.name not in context.scene.objects:
+                selected_emitter.projectile_tool.linked_emitters.remove(i)
+            else:
+                self.delete_emitters_projectiles(child, context)
         
         return {'FINISHED'}
 

@@ -145,46 +145,38 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
 
     def update_callback(self, context):
 
-        # print(self,": is trying to update and they're a:", self.child_emitter)
-
         # avoid updating if you're linked to a parent
         if self.child_emitter is True:
             return
 
         for child_sh in self.linked_emitters:
+
+            if child_sh.name not in bpy.data.objects:
+                item_to_remove = None
+
+                for i, item in enumerate(self.linked_emitters):
+                    # Example condition: remove the item with the name 'item_name'
+                    if item.name == child_sh.name:
+                        item_to_remove = i
+                        break
+
+                if item_to_remove is not None:
+                    self.linked_emitters.remove(item_to_remove)
+
+                continue
+
+
             linked_emitter = child_sh.linked_emitter
 
-            # Synchronize all settings that you want to copy from parent to linked here.
-            if linked_emitter.projectile_tool.toggle_collision != self.toggle_collision:
-                linked_emitter.projectile_tool.toggle_collision = self.toggle_collision
-            if linked_emitter.projectile_tool.projectile_scale != self.projectile_scale:
-                linked_emitter.projectile_tool.projectile_scale = self.projectile_scale
-            if linked_emitter.projectile_tool.muzzlef_scale != self.muzzlef_scale:
-                linked_emitter.projectile_tool.muzzlef_scale = self.muzzlef_scale
-            if linked_emitter.projectile_tool.projectile_obj != self.projectile_obj:
-                linked_emitter.projectile_tool.projectile_obj = self.projectile_obj
-            if linked_emitter.projectile_tool.projectile_velocity != self.projectile_velocity:
-                linked_emitter.projectile_tool.projectile_velocity = self.projectile_velocity
-            if linked_emitter.projectile_tool.projectile_lifetime != self.projectile_lifetime:
-                linked_emitter.projectile_tool.projectile_lifetime = self.projectile_lifetime
-            if linked_emitter.projectile_tool.toggle_muzzlef != self.toggle_muzzlef:
-                linked_emitter.projectile_tool.toggle_muzzlef = self.toggle_muzzlef
-            if linked_emitter.projectile_tool.toggle_sparks != self.toggle_sparks:
-                linked_emitter.projectile_tool.toggle_sparks = self.toggle_sparks
-            if linked_emitter.projectile_tool.toggle_decals != self.toggle_decals:
-                linked_emitter.projectile_tool.toggle_decals = self.toggle_decals
-            if linked_emitter.projectile_tool.decal_scale != self.decal_scale:
-                linked_emitter.projectile_tool.decal_scale = self.decal_scale
-            if linked_emitter.projectile_tool.tracked_obj != self.tracked_obj:
-                linked_emitter.projectile_tool.tracked_obj = self.tracked_obj
-            if linked_emitter.projectile_tool.projectile_color != self.projectile_color:
-                linked_emitter.projectile_tool.projectile_color = self.projectile_color
-            if linked_emitter.projectile_tool.toggle_targeter != self.toggle_targeter:
-                linked_emitter.projectile_tool.toggle_targeter = self.toggle_targeter
-            if linked_emitter.projectile_tool.custom_color != self.custom_color:
-                linked_emitter.projectile_tool.custom_color = self.custom_color
-            if linked_emitter.projectile_tool.toggle_flash != self.toggle_flash:
-                linked_emitter.projectile_tool.toggle_flash = self.toggle_flash
+            attributes = dir(linked_emitter.projectile_tool)
+
+            for attribute in attributes:
+
+                if not isinstance(getattr(self, attribute), bpy.props.CollectionProperty):
+                    try:
+                        setattr(linked_emitter.projectile_tool, attribute, getattr(self, attribute))
+                    except:
+                        pass # some things can't be updated and that's fine
 
         # print(self,"has updated its settings.")
 
@@ -208,7 +200,8 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
 
     collision_flashes: bpy.props.CollectionProperty(type=CollisionFlashPointer)
 
-    linked_emitters: bpy.props.CollectionProperty(type=LinkedEmitterPointer)
+    linked_emitters: bpy.props.CollectionProperty(
+        type=LinkedEmitterPointer)
 
     projectile_frames: bpy.props.CollectionProperty(type=ProjectileFrame)
 

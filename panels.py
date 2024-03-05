@@ -110,6 +110,7 @@ class ProjectileCreator(bpy.types.Panel):
             return
         
         projectile_tool = context.object.projectile_tool
+
         
         if projectile_tool.child_emitter is True:
             row = layout.row()
@@ -123,7 +124,8 @@ class ProjectileCreator(bpy.types.Panel):
                 row = layout.row()
                 row.prop(projectile_tool, "custom_color")
 
-            # row = layout.row()
+            
+
             # row.prop(projectile_tool, "toggle_targeter")
             row = layout.row()
             row.prop(projectile_tool, "projectile_lifetime")
@@ -165,8 +167,6 @@ class ProjectileCreator(bpy.types.Panel):
                 
 
             row = layout.separator()
-            row = layout.row()
-            row.prop(projectile_tool, "linked_emitters")
             row = layout.row()
             row.operator("object.create_linked_emitter", icon='LINKED')
             row = layout.separator()
