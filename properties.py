@@ -76,8 +76,8 @@ class RiggingProperties(bpy.types.PropertyGroup):
         default="FORWARD_X"
     )
 
-class LaserPointer(bpy.types.PropertyGroup):
-    instantiated_laser: bpy.props.PointerProperty(type=bpy.types.Object)
+class ProjectilePointer(bpy.types.PropertyGroup):
+    instantiated_projectile: bpy.props.PointerProperty(type=bpy.types.Object)
 
 class ImpactDecalPointer(bpy.types.PropertyGroup):
     impact_decal: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -91,9 +91,9 @@ class LinkedEmitterPointer(bpy.types.PropertyGroup):
         type=bpy.types.Object
     )
 
-class LaserFrame(bpy.types.PropertyGroup):
-    laser_frame: bpy.props.IntProperty(
-        name="Laser Frame"
+class ProjectileFrame(bpy.types.PropertyGroup):
+    projectile_frame: bpy.props.IntProperty(
+        name="Projectile Frame"
     )
 
 class CollisionFlashPointer(bpy.types.PropertyGroup):
@@ -141,7 +141,7 @@ class FlakFieldProperties(bpy.types.PropertyGroup):
         update = update_callback
     )
 
-class LaserEmitterProperties(bpy.types.PropertyGroup):
+class ProjectileEmitterProperties(bpy.types.PropertyGroup):
 
     def update_callback(self, context):
 
@@ -155,54 +155,54 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
             linked_emitter = child_sh.linked_emitter
 
             # Synchronize all settings that you want to copy from parent to linked here.
-            if linked_emitter.laser_tool.toggle_collision != self.toggle_collision:
-                linked_emitter.laser_tool.toggle_collision = self.toggle_collision
-            if linked_emitter.laser_tool.laser_scale != self.laser_scale:
-                linked_emitter.laser_tool.laser_scale = self.laser_scale
-            if linked_emitter.laser_tool.muzzlef_scale != self.muzzlef_scale:
-                linked_emitter.laser_tool.muzzlef_scale = self.muzzlef_scale
-            if linked_emitter.laser_tool.laser_obj != self.laser_obj:
-                linked_emitter.laser_tool.laser_obj = self.laser_obj
-            if linked_emitter.laser_tool.laser_velocity != self.laser_velocity:
-                linked_emitter.laser_tool.laser_velocity = self.laser_velocity
-            if linked_emitter.laser_tool.laser_lifetime != self.laser_lifetime:
-                linked_emitter.laser_tool.laser_lifetime = self.laser_lifetime
-            if linked_emitter.laser_tool.toggle_muzzlef != self.toggle_muzzlef:
-                linked_emitter.laser_tool.toggle_muzzlef = self.toggle_muzzlef
-            if linked_emitter.laser_tool.toggle_sparks != self.toggle_sparks:
-                linked_emitter.laser_tool.toggle_sparks = self.toggle_sparks
-            if linked_emitter.laser_tool.toggle_decals != self.toggle_decals:
-                linked_emitter.laser_tool.toggle_decals = self.toggle_decals
-            if linked_emitter.laser_tool.decal_scale != self.decal_scale:
-                linked_emitter.laser_tool.decal_scale = self.decal_scale
-            if linked_emitter.laser_tool.tracked_obj != self.tracked_obj:
-                linked_emitter.laser_tool.tracked_obj = self.tracked_obj
-            if linked_emitter.laser_tool.laser_color != self.laser_color:
-                linked_emitter.laser_tool.laser_color = self.laser_color
-            if linked_emitter.laser_tool.toggle_targeter != self.toggle_targeter:
-                linked_emitter.laser_tool.toggle_targeter = self.toggle_targeter
-            if linked_emitter.laser_tool.custom_color != self.custom_color:
-                linked_emitter.laser_tool.custom_color = self.custom_color
-            if linked_emitter.laser_tool.toggle_flash != self.toggle_flash:
-                linked_emitter.laser_tool.toggle_flash = self.toggle_flash
+            if linked_emitter.projectile_tool.toggle_collision != self.toggle_collision:
+                linked_emitter.projectile_tool.toggle_collision = self.toggle_collision
+            if linked_emitter.projectile_tool.projectile_scale != self.projectile_scale:
+                linked_emitter.projectile_tool.projectile_scale = self.projectile_scale
+            if linked_emitter.projectile_tool.muzzlef_scale != self.muzzlef_scale:
+                linked_emitter.projectile_tool.muzzlef_scale = self.muzzlef_scale
+            if linked_emitter.projectile_tool.projectile_obj != self.projectile_obj:
+                linked_emitter.projectile_tool.projectile_obj = self.projectile_obj
+            if linked_emitter.projectile_tool.projectile_velocity != self.projectile_velocity:
+                linked_emitter.projectile_tool.projectile_velocity = self.projectile_velocity
+            if linked_emitter.projectile_tool.projectile_lifetime != self.projectile_lifetime:
+                linked_emitter.projectile_tool.projectile_lifetime = self.projectile_lifetime
+            if linked_emitter.projectile_tool.toggle_muzzlef != self.toggle_muzzlef:
+                linked_emitter.projectile_tool.toggle_muzzlef = self.toggle_muzzlef
+            if linked_emitter.projectile_tool.toggle_sparks != self.toggle_sparks:
+                linked_emitter.projectile_tool.toggle_sparks = self.toggle_sparks
+            if linked_emitter.projectile_tool.toggle_decals != self.toggle_decals:
+                linked_emitter.projectile_tool.toggle_decals = self.toggle_decals
+            if linked_emitter.projectile_tool.decal_scale != self.decal_scale:
+                linked_emitter.projectile_tool.decal_scale = self.decal_scale
+            if linked_emitter.projectile_tool.tracked_obj != self.tracked_obj:
+                linked_emitter.projectile_tool.tracked_obj = self.tracked_obj
+            if linked_emitter.projectile_tool.projectile_color != self.projectile_color:
+                linked_emitter.projectile_tool.projectile_color = self.projectile_color
+            if linked_emitter.projectile_tool.toggle_targeter != self.toggle_targeter:
+                linked_emitter.projectile_tool.toggle_targeter = self.toggle_targeter
+            if linked_emitter.projectile_tool.custom_color != self.custom_color:
+                linked_emitter.projectile_tool.custom_color = self.custom_color
+            if linked_emitter.projectile_tool.toggle_flash != self.toggle_flash:
+                linked_emitter.projectile_tool.toggle_flash = self.toggle_flash
 
         # print(self,"has updated its settings.")
 
     def update_color(self, context):
 
         if self.muzzlef_obj:
-            if self.laser_color == "Red":
+            if self.projectile_color == "Red":
                 self.muzzlef_obj.color = (1.0, 0, 0, 1.0)
-            elif self.laser_color == "Blue":
+            elif self.projectile_color == "Blue":
                 self.muzzlef_obj.color = (0, 0, 1.0, 1.0)
-            elif self.laser_color == "Green":
+            elif self.projectile_color == "Green":
                 self.muzzlef_obj.color = (0, 1, 0, 1)
-            elif self.laser_color == "Custom":
+            elif self.projectile_color == "Custom":
                 self.muzzlef_obj.color = self.custom_color
 
         self.update_callback(context)
 
-    instantiated_lasers: bpy.props.CollectionProperty(type=LaserPointer)
+    instantiated_projectiles: bpy.props.CollectionProperty(type=ProjectilePointer)
 
     impact_decals: bpy.props.CollectionProperty(type=ImpactDecalPointer)
 
@@ -210,7 +210,7 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
 
     linked_emitters: bpy.props.CollectionProperty(type=LinkedEmitterPointer)
 
-    laser_frames: bpy.props.CollectionProperty(type=LaserFrame)
+    projectile_frames: bpy.props.CollectionProperty(type=ProjectileFrame)
 
     child_emitter: bpy.props.BoolProperty(
         default = False
@@ -226,7 +226,7 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     )
 
     muzzlef_obj: bpy.props.PointerProperty(
-        name = "Muzzle Flash",
+        name = "Animate Muzzle Flash",
         description = "Reference to emitter's muzzle flash object.",
         type=bpy.types.Object
     )
@@ -238,60 +238,60 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         update=update_callback
     )
 
-    laser_obj: bpy.props.PointerProperty(
-        name = "Laser Object",
-        description = "Object to instantiate as laser.",
+    projectile_obj: bpy.props.PointerProperty(
+        name = "Projectile Object",
+        description = "Object to instantiate as projectile.",
         type=bpy.types.Object,
         update=update_callback
     )
 
-    laser_velocity: bpy.props.FloatProperty(
-        name = "Laser Velocity",
-        description = "Velocity of lasers created by emitter.",
+    projectile_velocity: bpy.props.FloatProperty(
+        name = "Velocity",
+        description = "Velocity of projectiles created by emitter.",
         default = 1.0,
         min = 0.1,
         update=update_callback
     )
 
-    laser_lifetime: bpy.props.IntProperty(
-        name = "Laser Lifetime",
-        description = "How long the laser will 'exist' within the scene.",
+    projectile_lifetime: bpy.props.IntProperty(
+        name = "Lifetime",
+        description = "How long the projectile will 'exist' within the scene.",
         default = 50,
         min = 1,
         update=update_callback
     )
 
-    laser_scale: bpy.props.FloatProperty(
-        name = "Laser Scale",
-        description = "The scale of the lasers to be instantiated.",
+    projectile_scale: bpy.props.FloatProperty(
+        name = "Scale",
+        description = "The scale of the projectiles to be instantiated.",
         default = 1,
         update=update_callback
     )
 
     toggle_collision: bpy.props.BoolProperty(
-        name = "Collision",
-        description = "Sets whether or not laser should be destroyed when colliding with another object.",
+        name = "Enable Collision",
+        description = "Sets whether or not projectile should be destroyed when colliding with another object.",
         default = True,
         update=update_callback
     )
 
     toggle_muzzlef: bpy.props.BoolProperty(
         name = "Muzzle Flash",
-        description = "Toggle creation of muzzle flashes when the lasers are created by this emitter.",
+        description = "Toggle creation of muzzle flashes when the projectiles are created by this emitter.",
         default = True,
         update=update_callback
     )
 
     toggle_sparks: bpy.props.BoolProperty(
         name = "Sparks",
-        description = "Set whether or not the laser should create sparks on impact.",
+        description = "Set whether or not the projectile should create sparks on impact.",
         default = True,
         update=update_callback
     )
 
     toggle_decals: bpy.props.BoolProperty(
-        name = "Decals",
-        description = "Set whether or not physical markers are made where the laser impacts objects.",
+        name = "Draw Impact Marks",
+        description = "Set whether or not physical markers are made where the projectile impacts objects.",
         default = True,
         update=update_callback
     )
@@ -304,7 +304,7 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     )
 
     explosion_scale: bpy.props.FloatProperty(
-        name = "Explosion Scale",
+        name = "Billboard Scale",
         description = "Size that explosions will be made.",
         default = 1,
         update=update_callback
@@ -323,16 +323,16 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
         default = False
     )
 
-    laser_color: bpy.props.EnumProperty(
+    projectile_color: bpy.props.EnumProperty(
         items=(
-            ("Red", "Red", "Red Laser Color"),
-            ("Green", "Green", "Green Laser Color"),
-            ("Blue", "Blue", "Blue Laser Color"),
-            ("Custom", "Custom", "Custom Laser Color"),
+            ("Red", "Red", "Red Projectile Color"),
+            ("Green", "Green", "Green Projectile Color"),
+            ("Blue", "Blue", "Blue Projectile Color"),
+            ("Custom", "Custom", "Custom Projectile Color"),
         ),
         name="Color",
         default="Red",
-        description="Select color of the laser and it's muzzle flash.",
+        description="Select color of the projectile and it's muzzle flash.",
         update=update_color
     )
 
@@ -347,22 +347,22 @@ class LaserEmitterProperties(bpy.types.PropertyGroup):
     )
 
     toggle_flash: bpy.props.BoolProperty(
-        name="Toggle Collision Flash",
-        description="Enable a light flash when laser impacts an object",
+        name="Flash on Impact",
+        description="Enable a light flash when projectile impacts an object",
         default=True,
         update=update_callback
     )
 
     toggle_explosion: bpy.props.BoolProperty(
-        name="Toggle Collision Explosion",
-        description="Enable an explosion billboard when laser impacts an object",
+        name="Explode on Impact",
+        description="Enable an explosion billboard when projectile impacts an object",
         default=False,
         update=update_callback
     )
 
     toggle_flak: bpy.props.BoolProperty(
         name="Toggle Flak",
-        description="Enable an explosion at the termination point of each laser",
+        description="Enable an explosion at the termination point of each projectile",
         default=True,
         update=update_callback
     )

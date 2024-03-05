@@ -4,7 +4,7 @@ import bpy
 # Panel to be found in View 3D (hit 'n' in the viewport)
 class SimplePanel(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_simple_panel"
-    bl_label = "Rigging"
+    bl_label = "Animation"
     bl_space_type = "VIEW_3D" # to be found in the side-menu in 3D view
     bl_region_type = "UI"
     bl_category = "Rogue Toolkit"
@@ -50,7 +50,7 @@ class SimplePanel(bpy.types.Panel):
 
 class MiscCreator(bpy.types.Panel):
     bl_idname = "VIEW3D_PT_misc_creator"
-    bl_label = "Misc."
+    bl_label = "Misc. Tools"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Rogue Toolkit"
@@ -58,10 +58,7 @@ class MiscCreator(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        selected_objects = bpy.context.selected_objects
         active_object = bpy.context.active_object
-
-        layout.label(text="Explosions")
 
         box = None
         
@@ -69,7 +66,7 @@ class MiscCreator(bpy.types.Panel):
             box = layout.box()
             box.label(text="Flak Field")
             row = box.row()
-            row.operator("scene.create_flak_field")
+            row.operator("scene.create_flak_field", icon='CUBE')
             return
 
         flakfield_tool = context.object.flakfield_tool
@@ -86,16 +83,16 @@ class MiscCreator(bpy.types.Panel):
             row.prop(flakfield_tool, "num_explosions")
             box = box.box()
             row = box.row()
-            row.operator("object.simulate_flak_field")
+            row.operator("object.simulate_flak_field", icon='SNAP_VOLUME')
 
         if (len(flakfield_tool.explosion_billboards) > 0):
             row = box.row()
             row.alert = True
             row.operator("object.delete_flak_field", icon = 'TRASH')
 
-class LaserCreator(bpy.types.Panel):
-    bl_idname = "VIEW3D_PT_laser_creator"
-    bl_label = "Lasers"
+class ProjectileCreator(bpy.types.Panel):
+    bl_idname = "VIEW3D_PT_projectile_creator"
+    bl_label = "Projectile Simulation"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "Rogue Toolkit"
@@ -107,80 +104,80 @@ class LaserCreator(bpy.types.Panel):
         selected_objects = bpy.context.selected_objects
         active_object = bpy.context.active_object
 
-        if active_object is None or len(selected_objects) == 0 or active_object.laser_tool.valid_emitter is False:
+        if active_object is None or len(selected_objects) == 0 or active_object.projectile_tool.valid_emitter is False:
             row = layout.row()
-            row.operator("scene.create_laser_emitter")
+            row.operator("scene.create_projectile_emitter", icon="ORIENTATION_NORMAL")
             return
         
-        laser_tool = context.object.laser_tool
+        projectile_tool = context.object.projectile_tool
         
-        if laser_tool.child_emitter is True:
+        if projectile_tool.child_emitter is True:
             row = layout.row()
             row.operator("object.delete_linked_emitter")
             row = layout.row()
-            row.label(text="Parent Emitter: " + context.object.laser_tool.parent_emitter.name)
+            row.label(text="Parent Emitter: " + context.object.projectile_tool.parent_emitter.name)
         else:
             row = layout.row()
-            row.prop(laser_tool, "laser_color")
-            if laser_tool.laser_color == "Custom":
+            row.prop(projectile_tool, "projectile_color")
+            if projectile_tool.projectile_color == "Custom":
                 row = layout.row()
-                row.prop(laser_tool, "custom_color")
+                row.prop(projectile_tool, "custom_color")
+
+            # row = layout.row()
+            # row.prop(projectile_tool, "toggle_targeter")
+            row = layout.row()
+            row.prop(projectile_tool, "projectile_lifetime")
+            row = layout.row()
+            row.prop(projectile_tool, "projectile_scale")
+            row = layout.row()
+            row.prop(projectile_tool, "projectile_velocity")
 
             row = layout.row()
-            row.prop(laser_tool, "toggle_targeter")
-            row = layout.row()
-            row.prop(laser_tool, "laser_lifetime")
-            row = layout.row()
-            row.prop(laser_tool, "laser_scale")
-            row = layout.row()
-            row.prop(laser_tool, "laser_velocity")
-
+            row.prop(projectile_tool, "toggle_muzzlef")
+            if projectile_tool.toggle_muzzlef is True:
+                row = layout.row()
+                row.prop(projectile_tool, "muzzlef_scale")
+            
             row = layout.separator()
-            row = layout.row()
-            row.prop(laser_tool, "toggle_muzzlef")
-            if laser_tool.toggle_muzzlef is True:
-                box = layout.box()
-                box.prop(laser_tool, "muzzlef_scale")
-            row = layout.separator()
+            box = layout.box()
+            row = box.row()
+            row.prop(projectile_tool, "toggle_collision")
+            if projectile_tool.toggle_collision is True:
+                box2 = box.box()
+                box2.prop(projectile_tool, "toggle_decals")
+                if projectile_tool.toggle_decals is True:
+                    row = box2.row()
+                    row.prop(projectile_tool, "decal_scale")
+                row = box2.row()
+                # row.prop(projectile_tool, "toggle_flash")
+                # row = box.row()
+                row.prop(projectile_tool, "toggle_explosion")
+                if projectile_tool.toggle_explosion is True:
+                    row = box2.row()
+                    row.prop(projectile_tool, "explosion_scale")
 
-            row = layout.separator()
-            row = layout.row()
-            row.prop(laser_tool, "toggle_collision")
-            if laser_tool.toggle_collision is True:
-                box = layout.box()
-                box.prop(laser_tool, "toggle_decals")
-                row = box.row()
-                row.prop(laser_tool, "decal_scale")
-                row = box.row()
-                row.prop(laser_tool, "toggle_flash")
-                row = box.row()
-                row.prop(laser_tool, "toggle_explosion")
-                row = box.row()
-                row.prop(laser_tool, "explosion_scale")
+            row = box.row()
+            row.prop(projectile_tool, "toggle_flak")
 
-            row = layout.row()
-            row.prop(laser_tool, "toggle_flak")
-
-            if laser_tool.toggle_flak is True:
-                box = layout.box()
+            if projectile_tool.toggle_flak is True:
                 row = box.row()
-                row.prop(laser_tool, "flak_scale")
+                row.prop(projectile_tool, "flak_scale")
                 
 
             row = layout.separator()
             row = layout.row()
-            row.prop(laser_tool, "linked_emitters")
+            row.prop(projectile_tool, "linked_emitters")
             row = layout.row()
-            row.operator("object.create_linked_emitter")
+            row.operator("object.create_linked_emitter", icon='LINKED')
             row = layout.separator()
 
             row = layout.row()
-            row.operator("object.create_laser")
+            row.operator("object.create_projectile", icon='SNAP_NORMAL')
             row = layout.row()
-            row.operator("object.recalculate_lasers")
+            row.operator("object.recalculate_projectiles", icon='FILE_REFRESH')
             row = layout.row()
             row.alert = True
-            row.operator("object.delete_all_lasers", icon = 'TRASH')
+            row.operator("object.delete_all_projectiles", icon = 'TRASH')
 
 class WorldPanel(bpy.types.Panel):
     bl_idname = "PROPERTIES_PT_world_panel"

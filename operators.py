@@ -5,7 +5,7 @@ import os
 from mathutils import Vector, Matrix
 
 # Hard-coded names
-laser_collection_name = 'RogueToolkit_Lasers'
+projectile_collection_name = 'RogueToolkit_Projectiles'
 decal_collection_name = 'RogueToolkit_Decals'
 explosion_collection_name = 'RogueToolkit_Explosions'
 muzzlef_collection_name = 'RogueToolkit_MuzzleFlash'
@@ -263,10 +263,10 @@ def move_to_collection(name: str, obj) -> None:
     if obj.name in active_collection.objects:
         active_collection.objects.unlink(obj)
 
-class CreateLaser(bpy.types.Operator):
-    bl_idname = "object.create_laser"
-    bl_label = "Create Laser"
-    bl_description = "Instantiate a new laser projectile from this emitter."
+class CreateProjectile(bpy.types.Operator):
+    bl_idname = "object.create_projectile"
+    bl_label = "Simulate Projectile"
+    bl_description = "Instantiate a new projectile projectile from this emitter."
 
     def set_visibility(self, context, obj, fshow, fhide=None):
 
@@ -303,9 +303,9 @@ class CreateLaser(bpy.types.Operator):
 
         ignored_objects = []
 
-        laser_collection = bpy.data.collections.get(laser_collection_name)
-        if laser_collection:
-            ignored_objects += laser_collection.objects
+        projectile_collection = bpy.data.collections.get(projectile_collection_name)
+        if projectile_collection:
+            ignored_objects += projectile_collection.objects
         decal_collection = bpy.data.collections.get(decal_collection_name)
         if decal_collection:
             ignored_objects += decal_collection.objects
@@ -313,8 +313,8 @@ class CreateLaser(bpy.types.Operator):
         if explosion_collection:
             ignored_objects += explosion_collection.objects
 
-        if emitter.laser_tool.muzzlef_obj is not None:
-            ignored_objects.append(emitter.laser_tool.muzzlef_obj)
+        if emitter.projectile_tool.muzzlef_obj is not None:
+            ignored_objects.append(emitter.projectile_tool.muzzlef_obj)
 
         for source in ignored_objects:
             source.hide_viewport = setting
@@ -374,9 +374,9 @@ class CreateLaser(bpy.types.Operator):
         decal.location = loc + vec_rot
 
         # Set decal scale
-        decal.scale = (source.laser_tool.decal_scale, source.laser_tool.decal_scale, source.laser_tool.decal_scale)
+        decal.scale = (source.projectile_tool.decal_scale, source.projectile_tool.decal_scale, source.projectile_tool.decal_scale)
 
-        new_item = source.laser_tool.impact_decals.add()
+        new_item = source.projectile_tool.impact_decals.add()
         new_item.impact_decal = decal
 
         context.scene.frame_set(collision_frame)
@@ -395,11 +395,10 @@ class CreateLaser(bpy.types.Operator):
         decal.select_set(True)
         bpy.ops.object.modifier_apply(modifier="Shrinkwrap")
 
+        # offset the explosion closer to the camera
         vec = Vector((0.0, 0.0, 0.03))
         inv = decal.matrix_world.copy()
         inv.invert()
-        # vec aligned to local axis in Blender 2.8+
-        # in previous versions: vec_rot = vec * inv
         vec_rot = vec @ inv
         decal.location += vec_rot
 
@@ -462,8 +461,8 @@ class CreateLaser(bpy.types.Operator):
         vec_rot = vec @ inv
         explosion.location = loc + vec_rot
 
-        explosion.scale = (source.laser_tool.explosion_scale, source.laser_tool.explosion_scale, source.laser_tool.explosion_scale)
-        new_item = source.laser_tool.impact_decals.add()
+        explosion.scale = (source.projectile_tool.explosion_scale, source.projectile_tool.explosion_scale, source.projectile_tool.explosion_scale)
+        new_item = source.projectile_tool.impact_decals.add()
         new_item.impact_decal = explosion
 
         # Track to camera
@@ -571,15 +570,15 @@ class CreateLaser(bpy.types.Operator):
 
     def apply_color_to_obj(self, context, source, obj):
         new_color = (0, 0, 0, 0)
-        if source.laser_tool.laser_color == "Red":
+        if source.projectile_tool.projectile_color == "Red":
             new_color = (1.0, 0, 0, 1.0)
             
-        elif source.laser_tool.laser_color == "Blue":
+        elif source.projectile_tool.projectile_color == "Blue":
             new_color = (0, 0, 1.0, 1.0)
-        elif source.laser_tool.laser_color == "Green":
+        elif source.projectile_tool.projectile_color == "Green":
             new_color = (0, 1, 0, 1)
-        elif source.laser_tool.laser_color == "Custom":
-            new_color = source.laser_tool.custom_color
+        elif source.projectile_tool.projectile_color == "Custom":
+            new_color = source.projectile_tool.custom_color
 
         obj.color = new_color
 
@@ -600,10 +599,10 @@ class CreateLaser(bpy.types.Operator):
         pass
 
 
-    def create_termination_flak(self, context, source, new_laser, origin_frame):
+    def create_termination_flak(self, context, source, new_projectile, origin_frame):
 
-        context.scene.frame_set(origin_frame + source.laser_tool.laser_lifetime)
-        flak_loc = Vector(new_laser.location) # use Vector constructor so it's a full copy
+        context.scene.frame_set(origin_frame + source.projectile_tool.projectile_lifetime)
+        flak_loc = Vector(new_projectile.location) # use Vector constructor so it's a full copy
         collision_frame = context.scene.frame_current
         context.scene.frame_set(origin_frame)
 
@@ -637,9 +636,16 @@ class CreateLaser(bpy.types.Operator):
         # Set location
         explosion.location = flak_loc
 
-        explosion.scale = (source.laser_tool.flak_scale, source.laser_tool.flak_scale, source.laser_tool.flak_scale)
-        new_item = source.laser_tool.impact_decals.add()
+        explosion.scale = (source.projectile_tool.flak_scale, source.projectile_tool.flak_scale, source.projectile_tool.flak_scale)
+        new_item = source.projectile_tool.impact_decals.add()
         new_item.impact_decal = explosion
+
+        # offset the explosion closer to the camera
+        vec = Vector((0.0, 0.0, 0.1))
+        inv = explosion.matrix_world.copy()
+        inv.invert()
+        vec_rot = vec @ inv
+        explosion.location += vec_rot
 
         # Track to camera
         orient_target = bpy.context.scene.camera
@@ -663,17 +669,17 @@ class CreateLaser(bpy.types.Operator):
         context.scene.frame_set(origin_frame)
 
     
-    # Responsible for creation of each individual laser
-    def init_laser(self, source, context):
+    # Responsible for creation of each individual projectile
+    def init_projectile(self, source, context):
         origin_frame = context.scene.frame_current
         location = (0, 0, 0)
 
         # Muzzle flash
-        if source.laser_tool.toggle_muzzlef is True:
+        if source.projectile_tool.toggle_muzzlef is True:
 
-            if source.laser_tool.muzzlef_obj is None:
+            if source.projectile_tool.muzzlef_obj is None:
 
-                 # Create laser mesh
+                 # Create projectile mesh
                 muzzlef = None
 
                 try:
@@ -706,35 +712,35 @@ class CreateLaser(bpy.types.Operator):
 
                 move_to_collection(muzzlef_collection_name, muzzlef)
 
-                source.laser_tool.muzzlef_obj = muzzlef
+                source.projectile_tool.muzzlef_obj = muzzlef
 
             # Animate visibility
-            source.laser_tool.muzzlef_obj.scale = (0, 0, 0)
-            source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current - 1)
+            source.projectile_tool.muzzlef_obj.scale = (0, 0, 0)
+            source.projectile_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current - 1)
 
-            source.laser_tool.muzzlef_obj.scale = (source.laser_tool.muzzlef_scale, source.laser_tool.muzzlef_scale, source.laser_tool.muzzlef_scale)
-            source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current)
+            source.projectile_tool.muzzlef_obj.scale = (source.projectile_tool.muzzlef_scale, source.projectile_tool.muzzlef_scale, source.projectile_tool.muzzlef_scale)
+            source.projectile_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current)
 
-            source.laser_tool.muzzlef_obj.scale = (0, 0, 0)
-            source.laser_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current + 1)
+            source.projectile_tool.muzzlef_obj.scale = (0, 0, 0)
+            source.projectile_tool.muzzlef_obj.keyframe_insert(data_path="scale", frame=context.scene.frame_current + 1)
 
-        # Create laser mesh
-        new_laser = None
+        # Create projectile mesh
+        new_projectile = None
 
         try:
-            template_laser = bpy.data.objects["Laser"]
+            template_projectile = bpy.data.objects["Projectile"]
         except:
 
             with bpy.data.libraries.load(blend_file_path, link=True) as (data_from, data_to):
-                data_to.collections = ["lasers"]
+                data_to.collections = ["projectiles"]
 
             for collection in data_to.collections:
                 for obj in collection.objects:
                     move_to_collection(linkedobjs_collection_name, obj)
-                    template_laser = obj
+                    template_projectile = obj
 
-                    bpy.context.view_layer.objects.active = new_laser
-                    template_laser.select_set(False)
+                    bpy.context.view_layer.objects.active = new_projectile
+                    template_projectile.select_set(False)
 
                     break
 
@@ -743,85 +749,85 @@ class CreateLaser(bpy.types.Operator):
                 view_layer.layer_collection.children[linkedobjs_collection_name].exclude = True  
         
 
-        new_laser = template_laser.copy()
-        new_laser.animation_data_create()
+        new_projectile = template_projectile.copy()
+        new_projectile.animation_data_create()
 
-        self.apply_color_to_obj(context, source, new_laser)
+        self.apply_color_to_obj(context, source, new_projectile)
 
-        # Create a unique action for each new_laser object
-        new_laser.animation_data.action = bpy.data.actions.new(name=f"LaserAction_{new_laser.name}")
+        # Create a unique action for each new_projectile object
+        new_projectile.animation_data.action = bpy.data.actions.new(name=f"ProjectileAction_{new_projectile.name}")
 
-        move_to_collection(laser_collection_name, new_laser)
+        move_to_collection(projectile_collection_name, new_projectile)
 
-        bpy.context.view_layer.objects.active = new_laser
+        bpy.context.view_layer.objects.active = new_projectile
         source.select_set(False)
-        new_laser.select_set(True)
+        new_projectile.select_set(True)
 
-        # Confusing calculations to determine how to orient laser to proper axes
-        new_laser.matrix_world = source.matrix_world
+        # Confusing calculations to determine how to orient projectile to proper axes
+        new_projectile.matrix_world = source.matrix_world
         emitter_matrix = source.matrix_world.copy()
         emitter_matrix.invert() # inversion basically cancels out transformations applied to the object
         location, rotation, scale = emitter_matrix.decompose()
-        laser_matrix = Matrix.LocRotScale(location, rotation, scale)
-        rotation_vector = Vector((0,0,0)) @ laser_matrix
-        new_laser.location = new_laser.location + rotation_vector
+        projectile_matrix = Matrix.LocRotScale(location, rotation, scale)
+        rotation_vector = Vector((0,0,0)) @ projectile_matrix
+        new_projectile.location = new_projectile.location + rotation_vector
 
-        new_laser.scale = (source.laser_tool.laser_scale, source.laser_tool.laser_scale, source.laser_tool.laser_scale)
+        new_projectile.scale = (source.projectile_tool.projectile_scale, source.projectile_tool.projectile_scale, source.projectile_tool.projectile_scale)
 
         bpy.context.view_layer.objects.active = source
         source.select_set(True)
-        new_laser.select_set(False)
+        new_projectile.select_set(False)
 
-        # Animate movement of laser
-        origin = new_laser.location
-        new_laser.keyframe_insert( data_path = 'location', frame = context.scene.frame_current)
-        new_laser.location = source.matrix_world.translation + Vector((0, 0, context.object.laser_tool.laser_lifetime * context.object.laser_tool.laser_velocity)) @ laser_matrix
-        new_laser.keyframe_insert( data_path = 'location', frame = context.scene.frame_current + context.object.laser_tool.laser_lifetime)
-        new_laser.location = origin
+        # Animate movement of projectile
+        origin = new_projectile.location
+        new_projectile.keyframe_insert( data_path = 'location', frame = context.scene.frame_current)
+        new_projectile.location = source.matrix_world.translation + Vector((0, 0, context.object.projectile_tool.projectile_lifetime * context.object.projectile_tool.projectile_velocity)) @ projectile_matrix
+        new_projectile.keyframe_insert( data_path = 'location', frame = context.scene.frame_current + context.object.projectile_tool.projectile_lifetime)
+        new_projectile.location = origin
 
         # Make animation linear
-        fcurves = new_laser.animation_data.action.fcurves
+        fcurves = new_projectile.animation_data.action.fcurves
         for fcurve in fcurves:
             for kf in fcurve.keyframe_points:
                 kf.interpolation = 'LINEAR'
 
-        # Check for collisions of lasers
-        data = self.check_collision(source, new_laser, source.laser_tool.laser_lifetime, context)
+        # Check for collisions of projectiles
+        data = self.check_collision(source, new_projectile, source.projectile_tool.projectile_lifetime, context)
 
         if data is None: # if there is no collision
 
-            if (source.laser_tool.toggle_flak is True):
-                self.create_termination_flak(context, source, new_laser, origin_frame)
+            if (source.projectile_tool.toggle_flak is True):
+                self.create_termination_flak(context, source, new_projectile, origin_frame)
 
-            self.set_visibility(context, new_laser, context.scene.frame_current, context.scene.frame_current + source.laser_tool.laser_lifetime)
+            self.set_visibility(context, new_projectile, context.scene.frame_current, context.scene.frame_current + source.projectile_tool.projectile_lifetime)
 
         else: # if there is a collision
-            self.set_visibility(context, new_laser, context.scene.frame_current, data[1] + 1)
+            self.set_visibility(context, new_projectile, context.scene.frame_current, data[1] + 1)
                         
             # Decal handling
-            if source.laser_tool.toggle_decals is True:
+            if source.projectile_tool.toggle_decals is True:
                 hit_info = data[0]
                 if hit_info[0] is True:
                     self.create_decal(context, source, data[0], data[1], data[2])
-            if source.laser_tool.toggle_flash is True:
+            if source.projectile_tool.toggle_flash is True:
                 hit_info = data[0]
                 if hit_info[0] is True:
                     self.create_impact_flash(context, source, data[0], data[1])
-            if source.laser_tool.toggle_explosion is True:
+            if source.projectile_tool.toggle_explosion is True:
                 hit_info = data[0]
                 if hit_info[0] is True:
                     self.create_explosion(context, source, data[0], data[1], data[2])
 
-        # Save laser and frame to source
-        new_item = source.laser_tool.instantiated_lasers.add()
-        new_item.instantiated_laser = new_laser
+        # Save projectile and frame to source
+        new_item = source.projectile_tool.instantiated_projectiles.add()
+        new_item.instantiated_projectile = new_projectile
 
-        new_frame = source.laser_tool.laser_frames.add()
-        new_frame.laser_frame = bpy.context.scene.frame_current
+        new_frame = source.projectile_tool.projectile_frames.add()
+        new_frame.projectile_frame = bpy.context.scene.frame_current
 
         context.scene.frame_set(origin_frame)
 
-        self.report({'INFO'}, "Laser created.")
+        self.report({'INFO'}, "Projectile created.")
         return {'FINISHED'}
 
     def execute(self, context):
@@ -829,21 +835,21 @@ class CreateLaser(bpy.types.Operator):
         if bpy.context.object is None:
             return {'CANCELLED'}
 
-        if bpy.context.object.laser_tool.valid_emitter is False:
+        if bpy.context.object.projectile_tool.valid_emitter is False:
             return {'CANCELLED'}
 
-        if bpy.context.object.laser_tool.child_emitter is True:
+        if bpy.context.object.projectile_tool.child_emitter is True:
             return {'CANCELLED'}
 
         results = []
 
         selected_emitter = bpy.context.object
-        results.append(self.init_laser(selected_emitter, context))
+        results.append(self.init_projectile(selected_emitter, context))
 
-        for child in selected_emitter.laser_tool.linked_emitters:
+        for child in selected_emitter.projectile_tool.linked_emitters:
             linked_emitter = child.linked_emitter
 
-            results.append(self.init_laser(linked_emitter, context))
+            results.append(self.init_projectile(linked_emitter, context))
 
         curr_selection = bpy.context.object
         curr_selection.select_set(False)
@@ -858,7 +864,7 @@ class CreateLaser(bpy.types.Operator):
 
 class SimulateFlakField(bpy.types.Operator):
     bl_idname = "object.simulate_flak_field"
-    bl_label = "Simulate Flak Field"
+    bl_label = "Simulate"
     bl_description = "Simulate volume in which explosions are random and everywhere!"
 
     def create_explosion(self, context, location: tuple, start_frame, parent):
@@ -968,7 +974,7 @@ class SimulateFlakField(bpy.types.Operator):
 
 class CreateFlakField(bpy.types.Operator):
     bl_idname = "scene.create_flak_field"
-    bl_label = "Create Flak Field"
+    bl_label = "Create Simulation"
     bl_description = "Create volume for simulation"
 
     def execute(self, context):
@@ -988,7 +994,7 @@ class CreateFlakField(bpy.types.Operator):
 
 class DeleteFlakField(bpy.types.Operator):
     bl_idname = "object.delete_flak_field"
-    bl_label = "Delete Flak Field"
+    bl_label = "Clear Simulation"
     bl_description = "Delete volume and all linked explosion billboards."
 
     def execute(self, context):
@@ -1005,14 +1011,14 @@ class DeleteFlakField(bpy.types.Operator):
         for obj in objects_to_delete:
             bpy.data.objects.remove(obj, do_unlink=True)
 
-        bpy.data.objects.remove(context.object, do_unlink=True)
+        # bpy.data.objects.remove(context.object, do_unlink=True)
 
         return {'FINISHED'}
 
-class CreateLaserEmitter(bpy.types.Operator):
-    bl_idname = "scene.create_laser_emitter"
-    bl_label = "Create Laser Emitter"
-    bl_description = "Create emitter object for lasers."
+class CreateProjectileEmitter(bpy.types.Operator):
+    bl_idname = "scene.create_projectile_emitter"
+    bl_label = "Create Emitter"
+    bl_description = "Create emitter object for projectiles."
 
     def execute(self, context):
         location = (0, 0, 0)
@@ -1026,67 +1032,67 @@ class CreateLaserEmitter(bpy.types.Operator):
 
         bpy.ops.object.empty_add(type='SINGLE_ARROW', align='WORLD', location=location, scale=(1, 1, 1))
         new_emitter = bpy.context.active_object
-        new_emitter.name = "LaserEmitter"
+        new_emitter.name = "ProjectileEmitter"
 
-        new_emitter.laser_tool.valid_emitter = True
+        new_emitter.projectile_tool.valid_emitter = True
 
         # Apply a 90-degree rotation around the X-axis
         rotation_angle = math.radians(90)  # Convert degrees to radians
         new_emitter.rotation_euler.x = rotation_angle
 
-        self.report({'INFO'}, "Laser emitter created.")
+        self.report({'INFO'}, "Projectile emitter created.")
         return {'FINISHED'}
 
 class CreateLinkedEmitter(bpy.types.Operator):
     bl_idname = "object.create_linked_emitter"
     bl_label = "Create Linked Emitter"
-    bl_description = "Add an emitter with linked settings to the selected emitter that will create lasers in unison."
+    bl_description = "Add an emitter with linked settings to the selected emitter that will create projectiles in unison."
 
     def execute(self, context):
 
         main_emitter = bpy.context.active_object
 
-        bpy.ops.scene.create_laser_emitter()
+        bpy.ops.scene.create_projectile_emitter()
 
         new_emitter = bpy.context.active_object
-        new_emitter.laser_tool.child_emitter = True
+        new_emitter.projectile_tool.child_emitter = True
 
-        added_emitter = main_emitter.laser_tool.linked_emitters.add()
+        added_emitter = main_emitter.projectile_tool.linked_emitters.add()
         added_emitter.linked_emitter = new_emitter
 
-        added_emitter.linked_emitter.laser_tool.parent_emitter = main_emitter
+        added_emitter.linked_emitter.projectile_tool.parent_emitter = main_emitter
        
         # Synchronize all settings that you want to copy from parent to linked here.
-        if new_emitter.laser_tool.toggle_collision != main_emitter.laser_tool.toggle_collision:
-            new_emitter.laser_tool.toggle_collision = main_emitter.laser_tool.toggle_collision
-        if new_emitter.laser_tool.laser_scale != main_emitter.laser_tool.laser_scale:
-            new_emitter.laser_tool.laser_scale = main_emitter.laser_tool.laser_scale
-        if new_emitter.laser_tool.muzzlef_scale != main_emitter.laser_tool.muzzlef_scale:
-            new_emitter.laser_tool.muzzlef_scale = main_emitter.laser_tool.muzzlef_scale
-        if new_emitter.laser_tool.laser_obj != main_emitter.laser_tool.laser_obj:
-            new_emitter.laser_tool.laser_obj = main_emitter.laser_tool.laser_obj
-        if new_emitter.laser_tool.laser_velocity != main_emitter.laser_tool.laser_velocity:
-            new_emitter.laser_tool.laser_velocity = main_emitter.laser_tool.laser_velocity
-        if new_emitter.laser_tool.laser_lifetime != main_emitter.laser_tool.laser_lifetime:
-            new_emitter.laser_tool.laser_lifetime = main_emitter.laser_tool.laser_lifetime
-        if new_emitter.laser_tool.toggle_muzzlef != main_emitter.laser_tool.toggle_muzzlef:
-            new_emitter.laser_tool.toggle_muzzlef = main_emitter.laser_tool.toggle_muzzlef
-        if new_emitter.laser_tool.toggle_sparks != main_emitter.laser_tool.toggle_sparks:
-            new_emitter.laser_tool.toggle_sparks = main_emitter.laser_tool.toggle_sparks
-        if new_emitter.laser_tool.toggle_decals != main_emitter.laser_tool.toggle_decals:
-            new_emitter.laser_tool.toggle_decals = main_emitter.laser_tool.toggle_decals
-        if new_emitter.laser_tool.decal_scale != main_emitter.laser_tool.decal_scale:
-            new_emitter.laser_tool.decal_scale = main_emitter.laser_tool.decal_scale
-        if new_emitter.laser_tool.tracked_obj != main_emitter.laser_tool.tracked_obj:
-            new_emitter.laser_tool.tracked_obj = main_emitter.laser_tool.tracked_obj
-        if new_emitter.laser_tool.laser_color != main_emitter.laser_tool.laser_color:
-            new_emitter.laser_tool.laser_color = main_emitter.laser_tool.laser_color
-        if new_emitter.laser_tool.toggle_targeter != main_emitter.laser_tool.toggle_targeter:
-            new_emitter.laser_tool.toggle_targeter = main_emitter.laser_tool.toggle_targeter
-        if new_emitter.laser_tool.custom_color != main_emitter.laser_tool.custom_color:
-            new_emitter.laser_tool.custom_color = main_emitter.laser_tool.custom_color
-        if new_emitter.laser_tool.toggle_flash != main_emitter.laser_tool.toggle_flash:
-            new_emitter.laser_tool.toggle_flash = main_emitter.laser_tool.toggle_flash
+        if new_emitter.projectile_tool.toggle_collision != main_emitter.projectile_tool.toggle_collision:
+            new_emitter.projectile_tool.toggle_collision = main_emitter.projectile_tool.toggle_collision
+        if new_emitter.projectile_tool.projectile_scale != main_emitter.projectile_tool.projectile_scale:
+            new_emitter.projectile_tool.projectile_scale = main_emitter.projectile_tool.projectile_scale
+        if new_emitter.projectile_tool.muzzlef_scale != main_emitter.projectile_tool.muzzlef_scale:
+            new_emitter.projectile_tool.muzzlef_scale = main_emitter.projectile_tool.muzzlef_scale
+        if new_emitter.projectile_tool.projectile_obj != main_emitter.projectile_tool.projectile_obj:
+            new_emitter.projectile_tool.projectile_obj = main_emitter.projectile_tool.projectile_obj
+        if new_emitter.projectile_tool.projectile_velocity != main_emitter.projectile_tool.projectile_velocity:
+            new_emitter.projectile_tool.projectile_velocity = main_emitter.projectile_tool.projectile_velocity
+        if new_emitter.projectile_tool.projectile_lifetime != main_emitter.projectile_tool.projectile_lifetime:
+            new_emitter.projectile_tool.projectile_lifetime = main_emitter.projectile_tool.projectile_lifetime
+        if new_emitter.projectile_tool.toggle_muzzlef != main_emitter.projectile_tool.toggle_muzzlef:
+            new_emitter.projectile_tool.toggle_muzzlef = main_emitter.projectile_tool.toggle_muzzlef
+        if new_emitter.projectile_tool.toggle_sparks != main_emitter.projectile_tool.toggle_sparks:
+            new_emitter.projectile_tool.toggle_sparks = main_emitter.projectile_tool.toggle_sparks
+        if new_emitter.projectile_tool.toggle_decals != main_emitter.projectile_tool.toggle_decals:
+            new_emitter.projectile_tool.toggle_decals = main_emitter.projectile_tool.toggle_decals
+        if new_emitter.projectile_tool.decal_scale != main_emitter.projectile_tool.decal_scale:
+            new_emitter.projectile_tool.decal_scale = main_emitter.projectile_tool.decal_scale
+        if new_emitter.projectile_tool.tracked_obj != main_emitter.projectile_tool.tracked_obj:
+            new_emitter.projectile_tool.tracked_obj = main_emitter.projectile_tool.tracked_obj
+        if new_emitter.projectile_tool.projectile_color != main_emitter.projectile_tool.projectile_color:
+            new_emitter.projectile_tool.projectile_color = main_emitter.projectile_tool.projectile_color
+        if new_emitter.projectile_tool.toggle_targeter != main_emitter.projectile_tool.toggle_targeter:
+            new_emitter.projectile_tool.toggle_targeter = main_emitter.projectile_tool.toggle_targeter
+        if new_emitter.projectile_tool.custom_color != main_emitter.projectile_tool.custom_color:
+            new_emitter.projectile_tool.custom_color = main_emitter.projectile_tool.custom_color
+        if new_emitter.projectile_tool.toggle_flash != main_emitter.projectile_tool.toggle_flash:
+            new_emitter.projectile_tool.toggle_flash = main_emitter.projectile_tool.toggle_flash
 
         bpy.context.view_layer.objects.active = main_emitter
         main_emitter.select_set(True)
@@ -1094,57 +1100,57 @@ class CreateLinkedEmitter(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class RecalculateLasers(bpy.types.Operator):
-    bl_idname = "object.recalculate_lasers"
-    bl_label = "Recalculate Emitter's Lasers"
-    bl_description = "Recalculate all lasers created by this emitter. (for use when settings are changed, etc.)"
+class RecalculateProjectiles(bpy.types.Operator):
+    bl_idname = "object.recalculate_projectiles"
+    bl_label = "Update Simulation"
+    bl_description = "Recalculate all projectiles created by this emitter. (for use when settings are changed, etc.)"
 
-    def recalculate_emitter_lasers(self, source, context):
+    def recalculate_emitter_projectiles(self, source, context):
 
-        laser_frames = []
+        projectile_frames = []
 
-        for item in source.laser_tool.laser_frames:
-            laser_frames.append(item.laser_frame)
+        for item in source.projectile_tool.projectile_frames:
+            projectile_frames.append(item.projectile_frame)
 
-        bpy.ops.object.delete_all_lasers()
+        bpy.ops.object.delete_all_projectiles()
 
-        laser_frames = set(laser_frames)
-        # print("Laser frames:", laser_frames)
+        projectile_frames = set(projectile_frames)
+        # print("Projectile frames:", projectile_frames)
 
-        for laser_frame in laser_frames:
-            bpy.context.scene.frame_set(laser_frame)
+        for projectile_frame in projectile_frames:
+            bpy.context.scene.frame_set(projectile_frame)
             # print("executed once")
-            bpy.ops.object.create_laser()
+            bpy.ops.object.create_projectile()
 
     def execute(self, context):
 
         selected_emitter = bpy.context.object
         curr_frame = bpy.context.scene.frame_current
 
-        self.recalculate_emitter_lasers(selected_emitter, context)
+        self.recalculate_emitter_projectiles(selected_emitter, context)
 
         bpy.context.scene.frame_set(curr_frame)
         return {'FINISHED'}
 
 
 
-class DeleteAllLasers(bpy.types.Operator):
-    bl_idname = "object.delete_all_lasers"
-    bl_label = "Delete Emitter's Lasers"
-    bl_description = "Delete all lasers created by this emitter."
+class DeleteAllProjectiles(bpy.types.Operator):
+    bl_idname = "object.delete_all_projectiles"
+    bl_label = "Clear Simulation"
+    bl_description = "Delete all projectiles created by this emitter."
 
-    def delete_emitters_lasers(self, source, context):
+    def delete_emitters_projectiles(self, source, context):
 
-        emitter_properties = source.laser_tool
+        emitter_properties = source.projectile_tool
 
         # Create a list of objects to delete
-        objects_to_delete = [obj_ref.instantiated_laser for obj_ref in emitter_properties.instantiated_lasers]
+        objects_to_delete = [obj_ref.instantiated_projectile for obj_ref in emitter_properties.instantiated_projectiles]
         objects_to_delete += [obj_ref.impact_decal for obj_ref in emitter_properties.impact_decals]
 
         # Clear the collection property
-        emitter_properties.instantiated_lasers.clear()
+        emitter_properties.instantiated_projectiles.clear()
         emitter_properties.impact_decals.clear()
-        emitter_properties.laser_frames.clear()
+        emitter_properties.projectile_frames.clear()
 
         # Delete the objects from the scene
         for obj in objects_to_delete:
@@ -1153,7 +1159,7 @@ class DeleteAllLasers(bpy.types.Operator):
         if emitter_properties.muzzlef_obj:
             bpy.data.objects.remove(emitter_properties.muzzlef_obj, do_unlink=True)
 
-        self.report({'INFO'}, "All emitter's lasers deleted.")
+        self.report({'INFO'}, "All emitter's projectiles deleted.")
         return {'FINISHED'}
     
 
@@ -1161,10 +1167,10 @@ class DeleteAllLasers(bpy.types.Operator):
 
         selected_emitter = bpy.context.object
 
-        self.delete_emitters_lasers(selected_emitter, context)
-        for child in selected_emitter.laser_tool.linked_emitters:
+        self.delete_emitters_projectiles(selected_emitter, context)
+        for child in selected_emitter.projectile_tool.linked_emitters:
             linked_emitter = child.linked_emitter
-            self.delete_emitters_lasers(linked_emitter, context)
+            self.delete_emitters_projectiles(linked_emitter, context)
         
         return {'FINISHED'}
 
@@ -1175,17 +1181,17 @@ class DeleteLinkedEmitter(bpy.types.Operator):
     bl_description = "DaDASD"
 
     def execute(self, context):
-        if context.object.laser_tool.child_emitter is False:
+        if context.object.projectile_tool.child_emitter is False:
             return {'CANCELLED'}
         
-        coll =  context.object.laser_tool.parent_emitter.laser_tool.linked_emitters
+        coll =  context.object.projectile_tool.parent_emitter.projectile_tool.linked_emitters
         i = 0
         for item in coll:
             if item.linked_emitter == context.object:
                 coll.remove(i)
             i += 1
 
-        bpy.ops.object.delete_all_lasers()
+        bpy.ops.object.delete_all_projectiles()
         bpy.data.objects.remove(context.object, do_unlink=True)
 
         return {'FINISHED'}

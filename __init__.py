@@ -22,28 +22,28 @@ classes = [
     CreateLightspeedJump, 
     CreateLightspeedReturn, 
     SimplePanel,
-    LaserCreator,
+    ProjectileCreator,
     WorldPanel, 
     MiscCreator,
     SimulateFlakField,
     CreateFlakField,
     DeleteFlakField,
     CreateStarfield,
-    CreateLaserEmitter, 
-    CreateLaser,
+    CreateProjectileEmitter, 
+    CreateProjectile,
     CreateLinkedEmitter,
-    DeleteAllLasers,
+    DeleteAllProjectiles,
     RiggingProperties,
     SceneProperties,
-    LaserPointer,
+    ProjectilePointer,
     ImpactDecalPointer,
     LinkedEmitterPointer,
     FlakExplosionPointer,
     FlakFieldProperties,
-    LaserFrame,
+    ProjectileFrame,
     CollisionFlashPointer,
-    LaserEmitterProperties,
-    RecalculateLasers,
+    ProjectileEmitterProperties,
+    RecalculateProjectiles,
     DeleteLinkedEmitter
     ]
 
@@ -56,7 +56,7 @@ def register():
     
     bpy.types.Object.rigging_tool = bpy.props.PointerProperty(type=RiggingProperties) # save custom properties
     bpy.types.Scene.scene_tool = bpy.props.PointerProperty(type=SceneProperties)
-    bpy.types.Object.laser_tool = bpy.props.PointerProperty(type=LaserEmitterProperties)
+    bpy.types.Object.projectile_tool = bpy.props.PointerProperty(type=ProjectileEmitterProperties)
     bpy.types.Object.flakfield_tool = bpy.props.PointerProperty(type=FlakFieldProperties)
 
     # Add the hotkey
@@ -64,7 +64,7 @@ def register():
     kc = wm.keyconfigs.addon
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
-        kmi = km.keymap_items.new(CreateLaser.bl_idname, type='K', value='PRESS', ctrl=False)
+        kmi = km.keymap_items.new(CreateProjectile.bl_idname, type='K', value='PRESS', ctrl=False)
         addon_keymaps.append((km, kmi))
 
 
@@ -74,7 +74,7 @@ def unregister():
     
     del bpy.types.Object.rigging_tool # delete custom properties
     del bpy.types.Scene.scene_tool
-    del bpy.types.Object.laser_tool
+    del bpy.types.Object.projectile_tool
 
     # Remove the hotkey
     for km, kmi in addon_keymaps:
