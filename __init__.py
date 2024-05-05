@@ -6,7 +6,8 @@ from RogueToolkit.properties import *
 # to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application (in %appdata%)
 
 def delete_obj(scene):
-    print("Updating depsgraph...")
+    pass
+    # print("Updating depsgraph...")
 
     # for obj in scene.objects:
     #     # Check if the object is in your custom collection property

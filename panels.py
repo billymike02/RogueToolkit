@@ -152,6 +152,8 @@ class ProjectileCreator(bpy.types.Panel):
                 if projectile_tool.toggle_decals is True:
                     row = box2.row()
                     row.prop(projectile_tool, "decal_scale")
+                    row = box2.row()
+                    row.prop(projectile_tool, "decal_scale_variation")
                 row = box2.row()
                 # row.prop(projectile_tool, "toggle_flash")
                 # row = box.row()
@@ -159,6 +161,8 @@ class ProjectileCreator(bpy.types.Panel):
                 if projectile_tool.toggle_explosion is True:
                     row = box2.row()
                     row.prop(projectile_tool, "explosion_scale")
+                    row = box2.row()
+                    row.prop(projectile_tool, "explosion_scale_variation")
 
             row = box.row()
             row.prop(projectile_tool, "toggle_flak")
@@ -166,6 +170,8 @@ class ProjectileCreator(bpy.types.Panel):
             if projectile_tool.toggle_flak is True:
                 row = box.row()
                 row.prop(projectile_tool, "flak_scale")
+                row = box.row()
+                row.prop(projectile_tool, "flak_scale_variation")
                 
 
             row = layout.separator()

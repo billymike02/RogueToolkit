@@ -2,7 +2,7 @@ import bpy
 import math
 import random
 import os
-from mathutils import Vector, Matrix
+from mathutils import Vector, Matrix, Quaternion
 
 # Hard-coded names
 projectile_collection_name = 'RogueToolkit_Projectiles'
@@ -15,6 +15,12 @@ linkedobjs_collection_name = 'RogueToolkit_LinkedObjects'
 addon_dir = os.path.dirname(os.path.abspath(__file__))
 blend_file_name = "objects.blend"
 blend_file_path = os.path.join(addon_dir, blend_file_name)
+
+# Given a value and a range, get a variation on that number
+def get_varied_scale(value: float, offset: float) -> float:
+    min_scale = value - offset
+    max_scale = value + offset
+    return random.uniform(min_scale, max_scale)
 
 class AttachToPath(bpy.types.Operator):
     
@@ -374,7 +380,8 @@ class CreateProjectile(bpy.types.Operator):
         decal.location = loc + vec_rot
 
         # Set decal scale
-        decal.scale = (source.projectile_tool.decal_scale, source.projectile_tool.decal_scale, source.projectile_tool.decal_scale)
+        scale = get_varied_scale(source.projectile_tool.decal_scale, source.projectile_tool.decal_scale_variation)
+        decal.scale = (scale, scale, scale)
 
         new_item = source.projectile_tool.impact_decals.add()
         new_item.impact_decal = decal
@@ -461,7 +468,8 @@ class CreateProjectile(bpy.types.Operator):
         vec_rot = vec @ inv
         explosion.location = loc + vec_rot
 
-        explosion.scale = (source.projectile_tool.explosion_scale, source.projectile_tool.explosion_scale, source.projectile_tool.explosion_scale)
+        scale = get_varied_scale(source.projectile_tool.explosion_scale, source.projectile_tool.explosion_scale_variation)
+        explosion.scale = (scale, scale, scale)
         new_item = source.projectile_tool.impact_decals.add()
         new_item.impact_decal = explosion
 
@@ -503,7 +511,6 @@ class CreateProjectile(bpy.types.Operator):
         while context.scene.frame_current <= endf:
             projectile.hide_viewport = False
             locs.append(projectile.location.copy())
-            # print(projectile.location)
 
             # Increase the frame
             context.scene.frame_set(context.scene.frame_current + 1)
@@ -525,18 +532,12 @@ class CreateProjectile(bpy.types.Operator):
             source_dir = Vector(source.matrix_world.col[2][:3])
             rc_result = bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph,locs[f],source_dir)
             
-            # print("alt cast thing:", bpy.context.scene.ray_cast(bpy.context.window.view_layer.depsgraph, locs[f], source_dir))
-
             if rc_result[0]:
                 
-                # print("Ray hit something:", result[4].name, "at frame:", context.scene.frame_current - 1)
                 intersection_point = rc_result[1]
                 distance = (locs[f] - intersection_point).length
                 coll_frame = None
-
-                print("Ray hit something:", rc_result[4].name, "and the source:", source.name)
                 
-
                 if min_dist is None:
                     min_dist = distance
                 elif distance < min_dist:
@@ -647,6 +648,9 @@ class CreateProjectile(bpy.types.Operator):
         vec_rot = vec @ inv
         explosion.location += vec_rot
 
+        scale = get_varied_scale(source.projectile_tool.flak_scale, source.projectile_tool.flak_scale_variation)
+        explosion.scale = (scale, scale, scale)
+
         # Track to camera
         orient_target = bpy.context.scene.camera
 
@@ -721,8 +725,6 @@ class CreateProjectile(bpy.types.Operator):
                 new_muzzle.select_set(False)
 
                 source.projectile_tool.muzzlef_obj = new_muzzle
-
-                print(source.name, "BING has the muzzle", new_muzzle.name)
 
             # Animate visibility
             source.projectile_tool.muzzlef_obj.scale = (0, 0, 0)
@@ -834,9 +836,9 @@ class CreateProjectile(bpy.types.Operator):
         new_item.instantiated_projectile = new_projectile
 
         new_frame = source.projectile_tool.projectile_frames.add()
-        new_frame.projectile_frame = bpy.context.scene.frame_current
+        new_frame.projectile_frame = int(bpy.context.scene.frame_current)
 
-        context.scene.frame_set(origin_frame)
+        # context.scene.frame_set(origin_frame)
 
         self.report({'INFO'}, "Projectile created.")
         return {'FINISHED'}
@@ -1088,21 +1090,17 @@ class RecalculateProjectiles(bpy.types.Operator):
 
     def execute(self, context):
         source = bpy.context.object
+        origin_frame = bpy.context.scene.frame_current
 
         projectile_frames =[]
         
         for frame in source.projectile_tool.projectile_frames:
-            projectile_frames.append(frame)
+            projectile_frames.append(frame.projectile_frame)
 
         bpy.ops.object.delete_all_projectiles()
-        print("deleted all emitter linked objs")
-
-
-        origin_frame = bpy.context.scene.frame_current
 
         for item in projectile_frames:
-            bpy.context.scene.frame_set(item.projectile_frame)
-            print(bpy.context.scene.frame_current, "firing")
+            bpy.context.scene.frame_set(item)
             bpy.ops.object.create_projectile()
 
 
@@ -1134,7 +1132,6 @@ class DeleteAllProjectiles(bpy.types.Operator):
             bpy.data.objects.remove(obj, do_unlink=True)
 
         if emitter_properties.muzzlef_obj:
-            # print("deleting muzzle", emitter_properties.muzzlef_obj.name)
             bpy.data.objects.remove(emitter_properties.muzzlef_obj, do_unlink=True)
 
         self.report({'INFO'}, "All emitter's projectiles deleted.")

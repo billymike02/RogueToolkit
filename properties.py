@@ -149,7 +149,31 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
 
     def sync(self, context):
 
-        update = ['muzzlef_scale', 'projectile_obj', 'projectile_velocity','projectile_lifetime', 'projectile_scale', 'toggle_collision', 'toggle_muzzlef', 'toggle_sparks', 'toggle_decals','decal_scale', 'explosion_scale', 'tracked_obj', 'toggle_targeter', 'projectile_color', 'custom_color', 'toggle_flash','toggle_explosion', 'toggle_flak', 'flak_scale']
+        # Register properties to be synchronized to child emitters
+        update = [
+            'muzzlef_scale', 
+            'projectile_obj', 
+            'projectile_velocity',
+            'projectile_lifetime', 
+            'projectile_scale', 
+            'toggle_collision', 
+            'toggle_muzzlef', 
+            'toggle_sparks', 
+            'toggle_decals',
+            'decal_scale',
+            'explosion_scale',
+            'tracked_obj',
+            'toggle_targeter',
+            'projectile_color',
+            'custom_color',
+            'toggle_flash',
+            'toggle_explosion',
+            'toggle_flak',
+            'flak_scale',
+            'decal_scale_variation',
+            'explosion_scale_variation',
+            'flak_scale_variation'
+            ]
 
         if self.muzzlef_obj:    
             if self.projectile_color == "Red":
@@ -355,6 +379,27 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
     description='Scale of the flak sprite',
     default=1,
     min=0.01
+    )
+
+    decal_scale_variation: bpy.props.FloatProperty(
+        name = "Variation",
+        description='Variation in scale of decals',
+        default=0.5,
+        min=0
+    )
+
+    explosion_scale_variation: bpy.props.FloatProperty(
+        name = "Variation",
+        description='Variation in scale of explosions',
+        default=0.5,
+        min=0
+    )
+
+    flak_scale_variation: bpy.props.FloatProperty(
+        name = "Variation",
+        description='Variation in scale of flak',
+        default=0.5,
+        min=0
     )
 
 
