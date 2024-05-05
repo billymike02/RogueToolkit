@@ -79,7 +79,7 @@ def register():
     kc = wm.keyconfigs.addon
     if kc:
         km = wm.keyconfigs.addon.keymaps.new(name='3D View', space_type='VIEW_3D')
-        kmi = km.keymap_items.new(CreateProjectile.bl_idname, type='K', value='PRESS', ctrl=False)
+        kmi = km.keymap_items.new(CreateProjectile.bl_idname, type='P', value='PRESS', ctrl=False)
         addon_keymaps.append((km, kmi))
 
     bpy.app.handlers.depsgraph_update_post.append(delete_obj)

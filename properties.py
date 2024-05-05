@@ -242,6 +242,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         name = "Muzzle Flash Scale",
         description = "Peak size of the muzzle flash (if enabled).",
         default =  1,
+        min = 0.01,
         update=sync
     )
 
@@ -255,8 +256,8 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
     projectile_velocity: bpy.props.FloatProperty(
         name = "Velocity",
         description = "Velocity of projectiles created by emitter.",
-        default = 1.0,
-        min = 0.1,
+        default = 2.0,
+        min = 0.01,
         update=sync
     )
 
@@ -272,6 +273,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         name = "Scale",
         description = "The scale of the projectiles to be instantiated.",
         default = 1,
+        min = 0.01,
         update=sync
     )
 
@@ -307,6 +309,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         name = "Decal Scale",
         description = "Size that decals will be made.",
         default =  1,
+        min = 0.01,
         update=sync
     )
 
@@ -314,6 +317,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         name = "Billboard Scale",
         description = "Size that explosions will be made.",
         default = 1,
+        min = 0.01,
         update=sync
     )
 
@@ -384,7 +388,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
     decal_scale_variation: bpy.props.FloatProperty(
         name = "Variation",
         description='Variation in scale of decals',
-        default=0.5,
+        default=0.1,
         min=0
     )
 

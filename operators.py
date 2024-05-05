@@ -803,33 +803,40 @@ class CreateProjectile(bpy.types.Operator):
             for kf in fcurve.keyframe_points:
                 kf.interpolation = 'LINEAR'
 
+
+
         # Check for collisions of projectiles
-        data = self.check_collision(source, new_projectile, source.projectile_tool.projectile_lifetime, context)
+        if source.projectile_tool.toggle_collision:
+            data = self.check_collision(source, new_projectile, source.projectile_tool.projectile_lifetime, context)
 
-        if data is None: # if there is no collision
+            if data is None: # if there is no collision
 
-            if (source.projectile_tool.toggle_flak is True):
-                self.create_termination_flak(context, source, new_projectile, origin_frame)
+                self.set_visibility(context, new_projectile, context.scene.frame_current, context.scene.frame_current + source.projectile_tool.projectile_lifetime)
 
+            else: # if there is a collision
+
+                self.set_visibility(context, new_projectile, context.scene.frame_current, data[1] + 1)
+                            
+                # Decal handling
+                if source.projectile_tool.toggle_decals is True:
+                    hit_info = data[0]
+                    if hit_info[0] is True:
+                        self.create_decal(context, source, data[0], data[1], data[2])
+                if source.projectile_tool.toggle_flash is True:
+                    hit_info = data[0]
+                    if hit_info[0] is True:
+                        self.create_impact_flash(context, source, data[0], data[1])
+                if source.projectile_tool.toggle_explosion is True:
+                    hit_info = data[0]
+                    if hit_info[0] is True:
+                        self.create_explosion(context, source, data[0], data[1], data[2])
+        else:
             self.set_visibility(context, new_projectile, context.scene.frame_current, context.scene.frame_current + source.projectile_tool.projectile_lifetime)
 
-        else: # if there is a collision
 
-            self.set_visibility(context, new_projectile, context.scene.frame_current, data[1] + 1)
-                        
-            # Decal handling
-            if source.projectile_tool.toggle_decals is True:
-                hit_info = data[0]
-                if hit_info[0] is True:
-                    self.create_decal(context, source, data[0], data[1], data[2])
-            if source.projectile_tool.toggle_flash is True:
-                hit_info = data[0]
-                if hit_info[0] is True:
-                    self.create_impact_flash(context, source, data[0], data[1])
-            if source.projectile_tool.toggle_explosion is True:
-                hit_info = data[0]
-                if hit_info[0] is True:
-                    self.create_explosion(context, source, data[0], data[1], data[2])
+        # handle flak separately from collisions
+        if (source.projectile_tool.toggle_flak is True):
+            self.create_termination_flak(context, source, new_projectile, origin_frame)
 
         # Save projectile and frame to source
         new_item = source.projectile_tool.instantiated_projectiles.add()
