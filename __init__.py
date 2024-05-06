@@ -1,9 +1,27 @@
 import bpy
+import os
 from RogueToolkit.operators import *
 from RogueToolkit.panels import *
 from RogueToolkit.properties import *
+from RogueToolkit.utils import *
 
 # to create and edit a multifile blender addon, make the git repository take place in the addons folder of the blender application (in %appdata%)
+
+# Directory containing your operators
+operators_dir = "operators/"
+
+
+
+# List all files in the directory
+operator_files = os.listdir(operators_dir)
+
+# Loop through each file and import it
+for file_name in operator_files:
+    if file_name.endswith(".py"):  # Check if it's a Python file
+        module_name = os.path.splitext(file_name)[0]  # Get the module name
+        module_path = os.path.join(operators_dir, file_name)  # Get the full path to the file
+        exec(compile(open(module_path).read(), module_path, 'exec'))  # Import the module dynamically
+
 
 def delete_obj(scene):
     pass

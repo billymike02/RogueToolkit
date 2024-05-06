@@ -257,7 +257,7 @@ class ProjectileEmitterProperties(bpy.types.PropertyGroup):
         name = "Velocity",
         description = "Velocity of projectiles created by emitter.",
         default = 2.0,
-        min = 0.01,
+        min = 0.001,
         update=sync
     )
 
