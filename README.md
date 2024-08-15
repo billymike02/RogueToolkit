@@ -6,20 +6,18 @@ An addon designed to assist artists in the creation of multifaceted sci-fi scene
 
 ### Key Features:
 
-- Easy generation and customization of starfields
-- Streamlined rigging of objects to paths
-- Automated and polished system for creating 'projectile beams'
+- Easy generation and customization of starfields.
+- Streamlined rigging of objects to paths.
+- Automated and polished system for creating projectiles, as well as simulating their impact.
 
 ### Target Audience:
 
 This addon is intended for Blender artists who have felt constrained by the clunky and messy setup of scenes that stifle creativity.
 
-The intent is to provide a 'front-end' solution to many of the challenges of creating sci-fi scenes within Blender.
+The intent is to provide a 'frontend' solution to many of the challenges of creating sci-fi scenes within Blender.
 
-### Why I Created This:
+## Images
 
-As a big fan of sci-fi, getting into Blender towards the start of 2020 and the coronavirus pandemic was a massive creative outlet. Having spent a lot of time making animations of a certain style (YouTube channel linked below), I got very tired of having to apply brute force to Blender in order to achieve my desired renders.
-
-### Links:
-
-[YouTube Channel](https://www.youtube.com/A308Digital)
+<img src="demo_images/Screenshot 2024-08-12 at 19.25.51.png" width="300"/>
+<img src="demo_images/Screenshot 2024-08-12 at 19.27.13.png" width="300"/>
+<img src="demo_images/Screenshot 2024-08-12 at 19.27.57.png" width="300"/>
